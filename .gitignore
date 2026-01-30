@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+
+# Database files
+*.db
+*.db.*
+!schema.sql
+
+# Environment variables
+.env
+.env.local
+
+# Logs
+*.log
+npm-debug.log*
+server.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Backups
+backup-db.sh
+*.backup*
+*.bak*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

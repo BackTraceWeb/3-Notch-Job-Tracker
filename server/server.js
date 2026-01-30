@@ -1,0 +1,538 @@
+const express = require('express');
+const http = require('http');
+const socketIo = require('socket.io');
+const sqlite3 = require('sqlite3').verbose();
+const bcrypt = require('bcryptjs');
+const session = require('express-session');
+const path = require('path');
+const fs = require('fs');
+
+const app = express();
+app.set("trust proxy", 1);
+const server = http.createServer(app);
+const io = socketIo(server);
+
+// Middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Cache control middleware - prevent browser caching of dynamic files
+app.use((req, res, next) => {
+  // For HTML, JS, CSS, and JSON files - always check server for updates
+  if (req.url.match(/\.(html|js|css|json)$/)) {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+  }
+  // For images and fonts - allow short-term caching (1 hour)
+  else if (req.url.match(/\.(png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$/)) {
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+  }
+  next();
+});
+
+app.use(express.static(path.join(__dirname, '../public')));
+app.use(session({
+  secret: 'cabinet-tracker-secret-key-change-in-production',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: true,
+    sameSite: "lax", // Set to true if using HTTPS
+    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days in milliseconds
+  }
+}));
+
+// Database setup
+const db = new sqlite3.Database('./cabinet-jobs.db', (err) => {
+  if (err) {
+    console.error('Error opening database:', err);
+  } else {
+    console.log('Connected to SQLite database');
+    initializeDatabase();
+  }
+});
+
+// Initialize database tables
+function initializeDatabase() {
+  // Users table
+  db.run(`CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    full_name TEXT NOT NULL,
+    role TEXT DEFAULT 'employee',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`, (err) => {
+    if (err) {
+      console.error('Error creating users table:', err);
+      return;
+    }
+
+    // Create default admin user if no users exist (run after table is created)
+    db.get('SELECT COUNT(*) as count FROM users', [], (err, row) => {
+      if (err) {
+        console.error('Error checking users:', err);
+        return;
+      }
+      if (row.count === 0) {
+        const defaultPassword = bcrypt.hashSync('admin123', 10);
+        db.run('INSERT INTO users (username, password_hash, full_name, role) VALUES (?, ?, ?, ?)',
+          ['admin', defaultPassword, 'Administrator', 'admin'],
+          (err) => {
+            if (err) {
+              console.error('Error creating default admin:', err);
+            } else {
+              console.log('Default admin user created: username=admin, password=admin123');
+            }
+          }
+        );
+      }
+    });
+  });
+
+  // Jobs table
+  db.run(`CREATE TABLE IF NOT EXISTS jobs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    job_name TEXT NOT NULL,
+    job_address TEXT,
+    job_color TEXT,
+    stage TEXT DEFAULT 'Quote/Estimate',
+    items_needed TEXT,
+    finish_work TEXT,
+    install_date DATE,
+    completion_date DATE,
+    first_invoice_sent DATE,
+    first_invoice_paid DATE,
+    second_invoice_sent DATE,
+    second_invoice_paid DATE,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    created_by INTEGER,
+    FOREIGN KEY (created_by) REFERENCES users(id)
+  )`);
+
+  // Add invoice columns if they don't exist (for existing databases)
+  db.run(`ALTER TABLE jobs ADD COLUMN first_invoice_sent DATE`, (err) => {
+    if (err && !err.message.includes('duplicate column')) {
+      console.error('Error adding first_invoice_sent column:', err);
+    }
+  });
+
+  db.run(`ALTER TABLE jobs ADD COLUMN first_invoice_paid DATE`, (err) => {
+    if (err && !err.message.includes('duplicate column')) {
+      console.error('Error adding first_invoice_paid column:', err);
+    }
+  });
+
+  db.run(`ALTER TABLE jobs ADD COLUMN second_invoice_sent DATE`, (err) => {
+    if (err && !err.message.includes('duplicate column')) {
+      console.error('Error adding second_invoice_sent column:', err);
+    }
+  });
+
+  db.run(`ALTER TABLE jobs ADD COLUMN second_invoice_paid DATE`, (err) => {
+    if (err && !err.message.includes('duplicate column')) {
+      console.error('Error adding second_invoice_paid column:', err);
+    }
+  });
+
+  db.run(`ALTER TABLE jobs ADD COLUMN finish_work TEXT`, (err) => {
+    if (err && !err.message.includes('duplicate column')) {
+      console.error('Error adding finish_work column:', err);
+    }
+  });
+
+  // Add email column
+  db.run(`ALTER TABLE jobs ADD COLUMN job_email TEXT`, (err) => {
+    if (err && !err.message.includes('duplicate column')) {
+      console.error('Error adding job_email column:', err);
+    }
+  });
+
+  // Add invoice amount columns
+  db.run(`ALTER TABLE jobs ADD COLUMN first_invoice_amount REAL`, (err) => {
+    if (err && !err.message.includes('duplicate column')) {
+      console.error('Error adding first_invoice_amount column:', err);
+    }
+  });
+
+  db.run(`ALTER TABLE jobs ADD COLUMN second_invoice_amount REAL`, (err) => {
+    if (err && !err.message.includes('duplicate column')) {
+      console.error('Error adding second_invoice_amount column:', err);
+    }
+  });
+
+  // Add single invoice mode column
+  db.run(`ALTER TABLE jobs ADD COLUMN single_invoice_mode INTEGER DEFAULT 0`, (err) => {
+    if (err && !err.message.includes('duplicate column')) {
+      console.error('Error adding single_invoice_mode column:', err);
+    }
+  });
+
+  // Add quote/estimate columns
+  db.run(`ALTER TABLE jobs ADD COLUMN material_cost REAL`, (err) => {
+    if (err && !err.message.includes('duplicate column')) {
+      console.error('Error adding material_cost column:', err);
+    }
+  });
+
+  db.run(`ALTER TABLE jobs ADD COLUMN quoted_price REAL`, (err) => {
+    if (err && !err.message.includes('duplicate column')) {
+      console.error('Error adding quoted_price column:', err);
+    }
+  });
+
+  // Activity log table
+  db.run(`CREATE TABLE IF NOT EXISTS activity_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    job_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    action TEXT NOT NULL,
+    from_stage TEXT,
+    to_stage TEXT,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (job_id) REFERENCES jobs(id),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  )`);
+}
+
+// Middleware to check if user is logged in
+function requireAuth(req, res, next) {
+  if (req.session.userId) {
+    next();
+  } else {
+    res.status(401).json({ error: 'Unauthorized' });
+  }
+}
+
+// API Routes
+
+// Login
+app.post('/api/login', (req, res) => {
+  const { username, password } = req.body;
+
+  db.get('SELECT * FROM users WHERE username = ?', [username], (err, user) => {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    if (bcrypt.compareSync(password, user.password_hash)) {
+      req.session.userId = user.id;
+      req.session.username = user.username;
+      req.session.fullName = user.full_name;
+      res.json({ success: true, user: { id: user.id, username: user.username, fullName: user.full_name, role: user.role } });
+    } else {
+      res.status(401).json({ error: 'Invalid credentials' });
+    }
+  });
+});
+
+// Logout
+app.post('/api/logout', (req, res) => {
+  req.session.destroy();
+  res.json({ success: true });
+});
+
+// Check auth status
+app.get('/api/auth/check', (req, res) => {
+  if (req.session.userId) {
+    db.get('SELECT id, username, full_name, role FROM users WHERE id = ?', [req.session.userId], (err, user) => {
+      if (err || !user) {
+        return res.json({ authenticated: false });
+      }
+      res.json({ authenticated: true, user: { id: user.id, username: user.username, fullName: user.full_name, role: user.role } });
+    });
+  } else {
+    res.json({ authenticated: false });
+  }
+});
+
+// Get all jobs
+app.get('/api/jobs', requireAuth, (req, res) => {
+  db.all(`SELECT j.*, u.full_name as created_by_name
+          FROM jobs j
+          LEFT JOIN users u ON j.created_by = u.id
+          ORDER BY j.created_at ASC`, [], (err, rows) => {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    res.json(rows);
+  });
+});
+
+// Create new job
+app.post('/api/jobs', requireAuth, (req, res) => {
+  const { job_name, job_address, job_email, job_color, stage, items_needed, finish_work, install_date, completion_date,
+          first_invoice_sent, first_invoice_paid, second_invoice_sent, second_invoice_paid,
+          first_invoice_amount, second_invoice_amount, single_invoice_mode,
+          material_cost, quoted_price } = req.body;
+
+  db.run(`INSERT INTO jobs (job_name, job_address, job_email, job_color, stage, items_needed, finish_work, install_date, completion_date,
+                             first_invoice_sent, first_invoice_paid, second_invoice_sent, second_invoice_paid,
+                             first_invoice_amount, second_invoice_amount, single_invoice_mode,
+                             material_cost, quoted_price, created_by)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [job_name, job_address, job_email, job_color, stage || 'Quote/Estimate', items_needed, finish_work, install_date, completion_date,
+     first_invoice_sent, first_invoice_paid, second_invoice_sent, second_invoice_paid,
+     first_invoice_amount, second_invoice_amount, single_invoice_mode ? 1 : 0,
+     material_cost, quoted_price, req.session.userId],
+    function(err) {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' });
+      }
+
+      const jobId = this.lastID;
+
+      // Log activity
+      db.run('INSERT INTO activity_log (job_id, user_id, action) VALUES (?, ?, ?)',
+        [jobId, req.session.userId, 'created job']);
+
+      // Get the newly created job
+      db.get('SELECT * FROM jobs WHERE id = ?', [jobId], (err, job) => {
+        if (err) {
+          return res.status(500).json({ error: 'Database error' });
+        }
+
+        // Broadcast to all connected clients
+        io.emit('job-created', job);
+        res.json(job);
+      });
+    }
+  );
+});
+
+// Update job
+app.put('/api/jobs/:id', requireAuth, (req, res) => {
+  const jobId = req.params.id;
+  const { job_name, job_address, job_email, job_color, stage, items_needed, finish_work, install_date, completion_date,
+          first_invoice_sent, first_invoice_paid, second_invoice_sent, second_invoice_paid,
+          first_invoice_amount, second_invoice_amount, single_invoice_mode,
+          material_cost, quoted_price } = req.body;
+
+  // Get current job data to log changes
+  db.get('SELECT * FROM jobs WHERE id = ?', [jobId], (err, oldJob) => {
+    if (err || !oldJob) {
+      return res.status(404).json({ error: 'Job not found' });
+    }
+
+    db.run(`UPDATE jobs
+            SET job_name = ?, job_address = ?, job_email = ?, job_color = ?, stage = ?, items_needed = ?, finish_work = ?,
+                install_date = ?, completion_date = ?, first_invoice_sent = ?, first_invoice_paid = ?,
+                second_invoice_sent = ?, second_invoice_paid = ?, first_invoice_amount = ?, second_invoice_amount = ?,
+                single_invoice_mode = ?, material_cost = ?, quoted_price = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?`,
+      [job_name, job_address, job_email, job_color, stage, items_needed, finish_work, install_date, completion_date,
+       first_invoice_sent, first_invoice_paid, second_invoice_sent, second_invoice_paid,
+       first_invoice_amount, second_invoice_amount, single_invoice_mode ? 1 : 0,
+       material_cost, quoted_price, jobId],
+      function(err) {
+        if (err) {
+          return res.status(500).json({ error: 'Database error' });
+        }
+
+        // Log activity if stage changed
+        if (oldJob.stage !== stage) {
+          db.run('INSERT INTO activity_log (job_id, user_id, action, from_stage, to_stage) VALUES (?, ?, ?, ?, ?)',
+            [jobId, req.session.userId, 'moved job', oldJob.stage, stage]);
+        } else {
+          db.run('INSERT INTO activity_log (job_id, user_id, action) VALUES (?, ?, ?)',
+            [jobId, req.session.userId, 'updated job']);
+        }
+
+        // Get updated job
+        db.get('SELECT * FROM jobs WHERE id = ?', [jobId], (err, job) => {
+          if (err) {
+            return res.status(500).json({ error: 'Database error' });
+          }
+
+          // Broadcast to all connected clients
+          io.emit('job-updated', { job, movedBy: req.session.fullName });
+          res.json(job);
+        });
+      }
+    );
+  });
+});
+
+// Delete job
+app.delete('/api/jobs/:id', requireAuth, (req, res) => {
+  const jobId = req.params.id;
+
+  db.run('DELETE FROM jobs WHERE id = ?', [jobId], function(err) {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    // Log activity
+    db.run('INSERT INTO activity_log (job_id, user_id, action) VALUES (?, ?, ?)',
+      [jobId, req.session.userId, 'deleted job']);
+
+    // Broadcast to all connected clients
+    io.emit('job-deleted', { jobId });
+    res.json({ success: true });
+  });
+});
+
+// Get activity log for a job
+app.get('/api/jobs/:id/activity', requireAuth, (req, res) => {
+  const jobId = req.params.id;
+
+  db.all(`SELECT a.*, u.full_name as user_name
+          FROM activity_log a
+          JOIN users u ON a.user_id = u.id
+          WHERE a.job_id = ?
+          ORDER BY a.timestamp DESC`, [jobId], (err, rows) => {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    res.json(rows);
+  });
+});
+
+// Get all users (admin only)
+app.get('/api/users', requireAuth, (req, res) => {
+  db.get('SELECT role FROM users WHERE id = ?', [req.session.userId], (err, user) => {
+    if (err || !user || user.role !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    db.all('SELECT id, username, full_name, role, created_at FROM users', [], (err, rows) => {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' });
+      }
+      res.json(rows);
+    });
+  });
+});
+
+// Create new user (admin only)
+app.post('/api/users', requireAuth, (req, res) => {
+  const { username, password, full_name, role } = req.body;
+
+  db.get('SELECT role FROM users WHERE id = ?', [req.session.userId], (err, user) => {
+    if (err || !user || user.role !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    const password_hash = bcrypt.hashSync(password, 10);
+
+    db.run('INSERT INTO users (username, password_hash, full_name, role) VALUES (?, ?, ?, ?)',
+      [username, password_hash, full_name, role || 'employee'],
+      function(err) {
+        if (err) {
+          if (err.message.includes('UNIQUE constraint failed')) {
+            return res.status(400).json({ error: 'Username already exists' });
+          }
+          return res.status(500).json({ error: 'Database error' });
+        }
+
+        res.json({ id: this.lastID, username, full_name, role });
+      }
+    );
+  });
+});
+
+// Update user (admin only)
+app.put('/api/users/:id', requireAuth, (req, res) => {
+  const userId = req.params.id;
+  const { full_name, role, password } = req.body;
+
+  db.get('SELECT role FROM users WHERE id = ?', [req.session.userId], (err, user) => {
+    if (err || !user || user.role !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    // If password is provided, update it along with other fields
+    if (password && password.trim() !== '') {
+      const password_hash = bcrypt.hashSync(password, 10);
+      db.run('UPDATE users SET full_name = ?, role = ?, password_hash = ? WHERE id = ?',
+        [full_name, role, password_hash, userId],
+        function(err) {
+          if (err) {
+            return res.status(500).json({ error: 'Database error' });
+          }
+          res.json({ success: true, id: userId, full_name, role });
+        }
+      );
+    } else {
+      // Update without changing password
+      db.run('UPDATE users SET full_name = ?, role = ? WHERE id = ?',
+        [full_name, role, userId],
+        function(err) {
+          if (err) {
+            return res.status(500).json({ error: 'Database error' });
+          }
+          res.json({ success: true, id: userId, full_name, role });
+        }
+      );
+    }
+  });
+});
+
+// Delete user (admin only)
+app.delete('/api/users/:id', requireAuth, (req, res) => {
+  const userId = req.params.id;
+
+  db.get('SELECT role FROM users WHERE id = ?', [req.session.userId], (err, user) => {
+    if (err || !user || user.role !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    // Prevent admin from deleting themselves
+    if (parseInt(userId) === req.session.userId) {
+      return res.status(400).json({ error: 'Cannot delete your own account' });
+    }
+
+    db.run('DELETE FROM users WHERE id = ?', [userId], function(err) {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' });
+      }
+      res.json({ success: true });
+    });
+  });
+});
+
+// Socket.IO connection handling
+io.on('connection', (socket) => {
+  console.log('User connected:', socket.id);
+
+  socket.on('disconnect', () => {
+    console.log('User disconnected:', socket.id);
+  });
+});
+
+// Kiosk mode route (no authentication required)
+app.get("/kiosk", (req, res) => {
+  res.sendFile(path.join(__dirname, "../public/kiosk.html"));
+});
+
+// Kiosk API endpoint - returns jobs for kiosk display
+app.get("/api/kiosk/jobs", (req, res) => {
+  db.all("SELECT * FROM jobs WHERE stage NOT IN ('Completed', 'Quote/Estimate', 'Invoiced') ORDER BY id", [], (err, rows) => {
+    if (err) {
+      console.error('Kiosk API error:', err);
+      res.status(500).json({ error: "Database error" });
+    } else {
+      res.json(rows);
+    }
+  });
+});
+
+// Serve login page for root
+app.get('/', (req, res) => {
+  if (req.session.userId) {
+    res.sendFile(path.join(__dirname, '../public/index.html'));
+  } else {
+    res.sendFile(path.join(__dirname, '../public/login.html'));
+  }
+});
+
+// Start server
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});

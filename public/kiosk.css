@@ -1,0 +1,47 @@
+/* Kiosk-specific styles only - production board styles come from style.css */
+
+/* Kiosk Header */
+.kiosk-header {
+  background: linear-gradient(135deg, #b8ae97 0%, #a89e87 100%);
+  color: #181715;
+  padding: 20px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.kiosk-logo {
+  height: 60px;
+  width: auto;
+}
+
+.kiosk-header h1 {
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.kiosk-time {
+  font-size: 16px;
+  font-weight: 600;
+  text-align: right;
+  line-height: 1.4;
+}
+
+/* Kiosk Container */
+.kiosk-container {
+  min-height: calc(100vh - 100px);
+}
+
+/* Scale down columns to fit all 6 on screen */
+#production-board {
+  gap: 12px;
+  padding: 15px;
+}
+
+#production-board .kanban-column {
+  min-width: 210px;
+  max-width: 210px;
+}
