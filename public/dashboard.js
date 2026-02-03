@@ -193,9 +193,9 @@ function renderAllTable() {
 function renderInvoicingSummary() {
   const { jobs } = dashboardData;
 
-  // Filter jobs with invoices
+  // Filter jobs with invoices or quoted price
   const invoicedJobs = jobs.filter(j =>
-    j.first_invoice_sent || j.second_invoice_sent || j.first_invoice_paid || j.second_invoice_paid ||
+    j.quoted_price || j.first_invoice_sent || j.second_invoice_sent || j.first_invoice_paid || j.second_invoice_paid ||
     j.first_invoice_amount || j.second_invoice_amount
   );
 
@@ -218,7 +218,7 @@ function renderInvoicingSummary() {
       ${invoicedJobs.map(job => {
         const first = job.first_invoice_amount || 0;
         const second = job.second_invoice_amount || 0;
-        const total = first + second;
+        const total = job.quoted_price || (first + second);
         const paid = (job.first_invoice_paid ? first : 0) + (job.second_invoice_paid ? second : 0);
         const outstanding = total - paid;
         const jobIdentifierHtml = job.job_identifier ? ` <span class="job-identifier-badge">${job.job_identifier}</span>` : '';
