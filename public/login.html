@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - 3 Notch Cabinet Job Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Oswald', Arial, sans-serif;
+      background: #191917;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .login-container {
+      background: #242422;
+      border: 2px solid #b8ae97;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+      padding: 40px;
+      width: 100%;
+      max-width: 400px;
+    }
+    .logo {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .logo img {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: rgba(184, 174, 151, 0.1);
+      padding: 15px;
+      margin-bottom: 20px;
+      filter: drop-shadow(0 4px 16px rgba(0,0,0,0.3));
+    }
+    .logo h1 {
+      font-size: 28px;
+      color: #b8ae97;
+      margin-bottom: 8px;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    }
+    .logo p {
+      font-size: 14px;
+      color: #9a9189;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #b8ae97;
+      font-size: 14px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    input {
+      width: 100%;
+      padding: 14px;
+      background: #1e1e1c;
+      border: 2px solid #3a3a38;
+      border-radius: 8px;
+      font-size: 15px;
+      font-family: 'Oswald', Arial, sans-serif;
+      color: #e5e3df;
+      transition: border-color 0.2s;
+    }
+    input:focus {
+      outline: none;
+      border-color: #b8ae97;
+    }
+    button {
+      width: 100%;
+      padding: 14px;
+      background: #b8ae97;
+      color: #181715;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 700;
+      font-family: 'Oswald', Arial, sans-serif;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-top: 10px;
+    }
+    button:hover {
+      background: #c9bf9f;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(184, 174, 151, 0.4);
+    }
+    button:active {
+      transform: translateY(0);
+    }
+    .error {
+      background: rgba(194, 74, 64, 0.2);
+      color: #ff6b6b;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      text-align: center;
+      border-left: 3px solid #c24a40;
+      display: none;
+    }
+    .error.show {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="logo">
+      <img src="logo.png" alt="3 Notch Cabinet Co">
+      <h1>3 NOTCH</h1>
+      <p>Cabinet Job Tracker</p>
+    </div>
+
+    <div class="error" id="error-message"></div>
+
+    <form id="login-form">
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" required autofocus>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required>
+      </div>
+
+      <button type="submit">Login</button>
+    </form>
+  </div>
+
+  <script>
+    const form = document.getElementById('login-form');
+    const errorDiv = document.getElementById('error-message');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorDiv.classList.remove('show');
+
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+
+      try {
+        const response = await fetch('/api/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ username, password })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          window.location.href = '/';
+        } else {
+          errorDiv.textContent = data.error || 'Login failed';
+          errorDiv.classList.add('show');
+        }
+      } catch (error) {
+        errorDiv.textContent = 'Connection error. Please try again.';
+        errorDiv.classList.add('show');
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Business Dashboard | 3 Notch Cabinet Co</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;700&display=swap">
+  <style>
+    .dashboard-container {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .dashboard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid #b8ae97;
+    }
+
+    .dashboard-title {
+      font-size: 2.5rem;
+      color: #b8ae97;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+    }
+
+    .dashboard-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 30px;
+    }
+
+    .tab-button {
+      background: #2a2a28;
+      color: #b8ae97;
+      border: 2px solid #3a3a38;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-family: 'Oswald', Arial, sans-serif;
+      letter-spacing: 0.05em;
+    }
+
+    .tab-button:hover {
+      border-color: #b8ae97;
+      background: rgba(184, 174, 151, 0.1);
+    }
+
+    .tab-button.active {
+      background: #b8ae97;
+      color: #191917;
+      border-color: #b8ae97;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .stat-card {
+      background: #2a2a28;
+      border: 2px solid #3a3a38;
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 2.5rem;
+      color: #b8ae97;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .stat-label {
+      font-size: 0.9rem;
+      color: #9a9189;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .data-table {
+      background: #2a2a28;
+      border: 2px solid #3a3a38;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    .table-header {
+      background: #b8ae97;
+      color: #191917;
+      padding: 15px 20px;
+      font-size: 1.2rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+    }
+
+    .table-content {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th {
+      background: #3a3a38;
+      color: #b8ae97;
+      padding: 12px 15px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 0.9rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      border-bottom: 1px solid #4a4a48;
+    }
+
+    td {
+      padding: 12px 15px;
+      border-bottom: 1px solid #3a3a38;
+      color: #e5e3df;
+      font-size: 0.95rem;
+    }
+
+    tr:hover {
+      background: rgba(184, 174, 151, 0.05);
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .status-pending { background: rgba(255, 152, 0, 0.2); color: #ffa726; }
+    .status-approved { background: rgba(76, 175, 80, 0.2); color: #81c784; }
+    .status-denied { background: rgba(244, 67, 54, 0.2); color: #e57373; }
+    .status-complete { background: rgba(33, 150, 243, 0.2); color: #64b5f6; }
+    .status-invoiced { background: rgba(156, 39, 176, 0.2); color: #ba68c8; }
+
+    .invoice-status {
+      font-size: 0.85rem;
+      color: #9a9189;
+    }
+
+    .invoice-paid {
+      color: #81c784;
+      font-weight: 600;
+    }
+
+    .invoice-pending {
+      color: #ffa726;
+      font-weight: 600;
+    }
+
+    .linked-indicator {
+      display: inline-block;
+      background: rgba(33, 150, 243, 0.2);
+      color: #64b5f6;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-left: 8px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #9a9189;
+    }
+
+    .empty-state-icon {
+      font-size: 4rem;
+      margin-bottom: 20px;
+      opacity: 0.5;
+    }
+
+    .btn-action {
+      padding: 6px 12px;
+      border-radius: 5px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      margin-right: 8px;
+      font-family: 'Oswald', Arial, sans-serif;
+    }
+
+    .btn-edit {
+      background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+      color: white;
+    }
+
+    .btn-edit:hover {
+      background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+      transform: translateY(-1px);
+    }
+
+    .btn-delete {
+      background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+      color: white;
+    }
+
+    .btn-delete:hover {
+      background: linear-gradient(135deg, #d32f2f 0%, #c62828 100%);
+      transform: translateY(-1px);
+    }
+
+    @media (max-width: 768px) {
+      .dashboard-title {
+        font-size: 1.8rem;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .dashboard-tabs {
+        flex-wrap: wrap;
+      }
+
+      .tab-button {
+        flex: 1;
+        min-width: 120px;
+      }
+
+      .table-content {
+        font-size: 0.85rem;
+      }
+
+      th, td {
+        padding: 8px 10px;
+        font-size: 0.8rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-left">
+      <img src="logo.png" alt="3 Notch Logo" class="header-logo">
+      <h1>Business Dashboard</h1>
+    </div>
+    <div class="header-right">
+      <button class="btn-back" onclick="window.location.href='index.html'">← Back to Tracker</button>
+      <span class="user-name" id="user-name"></span>
+      <button class="btn-logout" id="logout-btn">Logout</button>
+    </div>
+  </div>
+
+  <div class="dashboard-container">
+    <div class="dashboard-header">
+      <h2 class="dashboard-title">BUSINESS OVERVIEW</h2>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="stats-grid" id="stats-grid">
+      <!-- Stats will be loaded here -->
+    </div>
+
+    <!-- Tabs -->
+    <div class="dashboard-tabs">
+      <button class="tab-button active" onclick="switchTab('all')">All Jobs & Orders</button>
+      <button class="tab-button" onclick="switchTab('invoicing')">Invoicing</button>
+      <button class="tab-button" onclick="switchTab('completed')">Completed</button>
+      <button class="tab-button" onclick="switchTab('orders')">Contractor Orders</button>
+      <button class="tab-button" onclick="switchTab('customers')">Customers</button>
+    </div>
+
+    <!-- All Jobs & Orders Tab -->
+    <div id="tab-all" class="tab-content active">
+      <div class="data-table">
+        <div class="table-header">All Jobs & Orders</div>
+        <div class="table-content">
+          <table id="table-all">
+            <!-- Data will be loaded here -->
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Invoicing Tab -->
+    <div id="tab-invoicing" class="tab-content">
+      <!-- Summary Table -->
+      <div class="data-table" style="margin-bottom: 20px;">
+        <div class="table-header">Invoice Summary</div>
+        <div class="table-content">
+          <table id="table-invoicing-summary">
+            <!-- Summary data will be loaded here -->
+          </table>
+        </div>
+      </div>
+
+      <!-- Interactive Detail Table -->
+      <div class="data-table">
+        <div class="table-header">Invoice Tracking - Edit & Manage</div>
+        <div class="table-content">
+          <table class="whiteboard-table" id="table-invoicing">
+            <thead>
+              <tr>
+                <th>Job Name</th>
+                <th>Email</th>
+                <th>Stage</th>
+                <th>Quoted Price</th>
+                <th>Material Cost</th>
+                <th>Invoice Type</th>
+                <th>1st Invoice</th>
+                <th>2nd Invoice</th>
+                <th>Completion Date</th>
+              </tr>
+            </thead>
+            <tbody id="invoicing-body">
+              <!-- Data will be loaded here -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Completed Tab -->
+    <div id="tab-completed" class="tab-content">
+      <!-- Time Period Filters -->
+      <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+        <button class="tab-button active" onclick="filterCompleted('week')">This Week</button>
+        <button class="tab-button" onclick="filterCompleted('month')">This Month</button>
+        <button class="tab-button" onclick="filterCompleted('year')">This Year</button>
+        <button class="tab-button" onclick="filterCompleted('all')">All Time</button>
+      </div>
+
+      <!-- Completion Stats -->
+      <div class="stats-grid" style="margin-bottom: 30px;">
+        <div class="stat-card">
+          <div class="stat-value" id="completed-count">0</div>
+          <div class="stat-label">Jobs Completed</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="completed-revenue">$0.00</div>
+          <div class="stat-label">Total Revenue</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="completed-paid">$0.00</div>
+          <div class="stat-label">Revenue Collected</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="completed-outstanding">$0.00</div>
+          <div class="stat-label">Outstanding</div>
+        </div>
+      </div>
+
+      <!-- Completed Jobs Table -->
+      <div class="data-table">
+        <div class="table-header">Completed Jobs</div>
+        <div class="table-content">
+          <table id="table-completed">
+            <!-- Data will be loaded here -->
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contractor Orders Tab -->
+    <div id="tab-orders" class="tab-content">
+      <div class="data-table">
+        <div class="table-header">Contractor Portal Orders</div>
+        <div class="table-content">
+          <table id="table-orders">
+            <!-- Data will be loaded here -->
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Customers Tab -->
+    <div id="tab-customers" class="tab-content">
+      <div class="data-table">
+        <div class="table-header">Customer Management</div>
+        <div class="table-content">
+          <table id="table-customers">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Address</th>
+                <th>Jobs</th>
+                <th>Contractor Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="customers-body">
+              <!-- Customers will be loaded here -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Customer Modal -->
+  <div class="modal" id="edit-customer-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Edit Customer</h2>
+        <button class="close-modal" id="close-edit-customer-modal">&times;</button>
+      </div>
+      <form id="edit-customer-form">
+        <input type="hidden" id="edit-customer-id">
+
+        <div class="form-group">
+          <label for="edit-customer-name">Customer Name *</label>
+          <input type="text" id="edit-customer-name" required>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-customer-email">Email</label>
+          <input type="email" id="edit-customer-email">
+        </div>
+
+        <div class="form-group">
+          <label for="edit-customer-phone">Phone</label>
+          <input type="tel" id="edit-customer-phone">
+        </div>
+
+        <div class="form-group">
+          <label for="edit-customer-address">Address</label>
+          <input type="text" id="edit-customer-address">
+        </div>
+
+        <div class="form-group">
+          <label for="edit-customer-notes">Notes</label>
+          <textarea id="edit-customer-notes" rows="3"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="edit-customer-is-contractor">
+            This customer is a contractor
+          </label>
+        </div>
+
+        <!-- Customer Jobs Section -->
+        <div style="margin-top: 30px; padding: 20px; border: 2px solid #b8ae97; border-radius: 8px; background: rgba(184, 174, 151, 0.05);">
+          <div style="font-size: 1.1rem; font-weight: 700; color: #b8ae97; margin-bottom: 15px; text-align: center;">Customer Jobs</div>
+          <div id="customer-jobs-list" style="max-height: 400px; overflow-y: auto;">
+            <!-- Jobs will be loaded here -->
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" id="cancel-edit-customer">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+          <button type="button" id="delete-customer-btn" class="btn btn-danger">Delete Customer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "name": "3 Notch Job Board",
+  "short_name": "Job Board",
+  "description": "Job floor display board",
+  "start_url": "/kiosk",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#1a1a1a",
+  "theme_color": "#b8ae97",
+  "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}

@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Job Tracker">
+  <meta name="theme-color" content="#b8ae97">
+  <meta name="description" content="3 Notch Cabinet Co. real-time job tracking system">
+
+  <title>3 Notch Cabinet Job Tracker</title>
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Apple Touch Icons -->
+  <link rel="apple-touch-icon" href="logo.png">
+  <link rel="icon" type="image/png" href="logo.png">
+
+  <link rel="stylesheet" href="style.css?v=20260120i">
+</head>
+<body>
+  <div class="header">
+    <div class="header-left">
+      <img src="logo.png" alt="3 Notch Cabinet Co" class="header-logo">
+      <h1>JOB TRACKER</h1>
+    </div>
+    <div class="header-right">
+      <span id="user-name"></span>
+      <button id="dashboard-btn" class="btn btn-dashboard" onclick="window.location.href='dashboard.html'">📊 Dashboard</button>
+      <button id="new-quote-btn" class="btn btn-primary">+ New Quote/Job</button>
+      <button id="admin-btn" class="btn btn-admin" style="display: none;">⚙️ Admin</button>
+      <button id="logout-btn" class="btn btn-secondary">Logout</button>
+    </div>
+  </div>
+
+  <!-- Board View Switcher -->
+  <div class="board-switcher">
+    <button class="board-tab" data-board="quotes">Quote/Estimate</button>
+    <button class="board-tab active" data-board="production">Production Board</button>
+    <button class="board-tab" data-board="milestone">Milestone Board</button>
+  </div>
+
+  <!-- Production Board -->
+  <div class="board-container" id="production-view">
+    <div class="kanban-board" id="production-board">
+      <!-- Production stages will be dynamically added here -->
+    </div>
+  </div>
+
+  <!-- Milestone Board -->
+  <div class="board-container" id="milestone-view" style="display: none;">
+    <div class="kanban-board" id="milestone-board">
+      <!-- Milestone stages will be dynamically added here -->
+    </div>
+  </div>
+
+  <!-- Quote/Estimate Board -->
+  <div class="board-container" id="quotes-view" style="display: none;">
+    <div class="kanban-board" id="quotes-board">
+      <!-- Quote/Estimate stage will be dynamically added here -->
+    </div>
+  </div>
+
+  <!-- Add/Edit Job Modal -->
+  <div class="modal" id="job-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modal-title">New Job</h2>
+        <button class="close-modal">&times;</button>
+      </div>
+      <form id="job-form">
+        <input type="hidden" id="job-id">
+
+        <div class="form-group">
+          <label for="job-name">Job Name (Customer)</label>
+          <input type="text" id="job-name" required>
+        </div>
+
+        <div class="form-group">
+          <label for="job-address">Job Address</label>
+          <input type="text" id="job-address">
+        </div>
+
+        <div class="form-group">
+          <label for="job-email">Email</label>
+          <input type="email" id="job-email" required>
+        </div>
+
+        <div class="form-group">
+          <label for="job-color">Job Color</label>
+          <input type="text" id="job-color">
+        </div>
+
+        <!-- Quote/Estimate Section -->
+        <div class="quote-section" id="quote-section">
+          <div class="section-header">Quote Details</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="material-cost">Material Cost</label>
+              <div class="currency-input-wrapper">
+                <span class="currency-prefix">$</span>
+                <input type="number" id="material-cost" step="0.01" min="0" placeholder="0.00">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="quoted-price">Quoted Price</label>
+              <div class="currency-input-wrapper">
+                <span class="currency-prefix">$</span>
+                <input type="number" id="quoted-price" step="0.01" min="0" placeholder="0.00">
+              </div>
+            </div>
+          </div>
+          <div class="profit-display" id="profit-display">
+            <span class="profit-label">Profit Margin:</span>
+            <span class="profit-value" id="profit-value">$0.00</span>
+            <span class="profit-percent" id="profit-percent">(0%)</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="stage">Stage</label>
+          <select id="stage">
+            <option value="Quote/Estimate">Quote/Estimate</option>
+            <optgroup label="In Progress">
+              <option value="In Progress - Ready to Cut">Ready to Cut</option>
+              <option value="In Progress - Cut">Cut</option>
+              <option value="In Progress - Paint & Sand">Paint & Sand</option>
+              <option value="In Progress - Assemble">Assemble</option>
+              <option value="In Progress - Ready to Install">Ready to Install</option>
+              <option value="In Progress - Installed">Installed</option>
+              <option value="In Progress - Installed - Finish Work">Installed - Finish Work</option>
+            </optgroup>
+            <option value="Completed">Completed</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="completion-percentage">Completion %</label>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <input type="range" id="completion-percentage" min="0" max="100" step="5" value="0" style="flex: 1;">
+            <span id="completion-percentage-value" style="min-width: 45px; font-weight: 700; color: #b8ae97;">0%</span>
+          </div>
+        </div>
+
+        <div class="form-group" id="finish-work-group" style="display: none;">
+          <label for="finish-work">Finish Work Notes</label>
+          <textarea id="finish-work" rows="3"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="items-needed">Items Needed/Waiting On</label>
+          <textarea id="items-needed" rows="3"></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="install-date">Install Date</label>
+            <input type="date" id="install-date">
+          </div>
+
+          <div class="form-group">
+            <label for="completion-date">Completion Date</label>
+            <input type="date" id="completion-date">
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary cancel-btn">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Job</button>
+          <button type="button" id="delete-job-btn" class="btn btn-danger" style="display:none;">Delete</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Admin Panel Modal -->
+  <div class="modal" id="admin-modal">
+    <div class="modal-content admin-modal-content">
+      <div class="modal-header">
+        <h2>User Management</h2>
+        <button class="close-modal" id="close-admin-modal">&times;</button>
+      </div>
+
+      <div class="admin-panel">
+        <div class="admin-section">
+          <h3>Add New User</h3>
+          <form id="add-user-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="new-username">Username</label>
+                <input type="text" id="new-username" required>
+              </div>
+              <div class="form-group">
+                <label for="new-password">Password</label>
+                <input type="password" id="new-password" required>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="new-fullname">Full Name</label>
+                <input type="text" id="new-fullname" required>
+              </div>
+              <div class="form-group">
+                <label for="new-role">Role</label>
+                <select id="new-role" required>
+                  <option value="employee">Employee (Full Access)</option>
+                  <option value="job-floor">Job Floor (No Invoiced Tab)</option>
+                  <option value="admin">Administrator</option>
+                </select>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Add User</button>
+          </form>
+        </div>
+
+        <div class="admin-section">
+          <h3>Existing Users</h3>
+          <table class="users-table">
+            <thead>
+              <tr>
+                <th>Username</th>
+                <th>Full Name</th>
+                <th>Role</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="users-list">
+              <!-- Users will be populated here -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit User Modal -->
+  <div class="modal" id="edit-user-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Edit User</h2>
+        <button class="close-modal" id="close-edit-user-modal">&times;</button>
+      </div>
+      <form id="edit-user-form">
+        <input type="hidden" id="edit-user-id">
+
+        <div class="form-group">
+          <label for="edit-username">Username</label>
+          <input type="text" id="edit-username" disabled>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-fullname">Full Name</label>
+          <input type="text" id="edit-fullname" required>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-role">Role</label>
+          <select id="edit-role" required>
+            <option value="employee">Employee (Full Access)</option>
+            <option value="job-floor">Job Floor (No Invoiced Tab)</option>
+            <option value="admin">Administrator</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-password">New Password (leave blank to keep current)</label>
+          <input type="password" id="edit-password" placeholder="Leave blank to keep current password">
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" id="cancel-edit-user">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+          <button type="button" id="delete-user-btn" class="btn btn-danger">Delete User</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="toast"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="paint-colors.js?v=20260120i"></script>
+  <script src="app.js?v=20260120i"></script>
+
+  <!-- PWA Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then((registration) => {
+            console.log('Service Worker registered:', registration.scope);
+          })
+          .catch((error) => {
+            console.log('Service Worker registration failed:', error);
+          });
+      });
+    }
+  </script>
+</body>
+</html>

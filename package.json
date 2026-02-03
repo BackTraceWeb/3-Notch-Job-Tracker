@@ -1,0 +1,28 @@
+{
+  "name": "3-notch-cabinet-job-tracker",
+  "version": "1.0.0",
+  "description": "Real-time cabinet job tracking system with drag-and-drop Kanban board",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "node server/server.js"
+  },
+  "keywords": [
+    "kanban",
+    "job-tracker",
+    "cabinet"
+  ],
+  "author": "BackTrace",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "connect-sqlite3": "^0.9.16",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "express-session": "^1.18.2",
+    "pdfkit": "^0.17.2",
+    "socket.io": "^4.8.3",
+    "sqlite3": "^5.1.7"
+  }
+}

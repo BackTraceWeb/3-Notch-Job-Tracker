@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Job Tracker">
+  <meta name="theme-color" content="#b8ae97">
+  <meta name="description" content="3 Notch Cabinet Co. real-time job tracking system">
+
+  <title>3 Notch Cabinet Job Tracker</title>
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Apple Touch Icons -->
+  <link rel="apple-touch-icon" href="logo.png">
+  <link rel="icon" type="image/png" href="logo.png">
+
+  <link rel="stylesheet" href="style.css?v=20260120i">
+</head>
+<body>
+  <div class="header">
+    <div class="header-left">
+      <img src="logo.png" alt="3 Notch Cabinet Co" class="header-logo">
+      <h1>JOB TRACKER</h1>
+    </div>
+    <div class="header-right">
+      <span id="user-name"></span>
+      <button id="dashboard-btn" class="btn btn-dashboard" onclick="window.location.href='dashboard.html'">📊 Dashboard</button>
+      <button id="new-quote-btn" class="btn btn-success">+ New Quote/Job</button>
+      <button id="admin-btn" class="btn btn-admin" style="display: none;">⚙️ Admin</button>
+      <button id="logout-btn" class="btn btn-secondary">Logout</button>
+    </div>
+  </div>
+
+  <!-- Board View Switcher -->
+  <div class="board-switcher">
+    <button class="board-tab" data-board="quotes">Quote/Estimate</button>
+    <button class="board-tab active" data-board="production">Production Board</button>
+    <button class="board-tab" data-board="milestone">Milestone Board</button>
+  </div>
+
+  <!-- Production Board -->
+  <div class="board-container" id="production-view">
+    <div class="kanban-board" id="production-board">
+      <!-- Production stages will be dynamically added here -->
+    </div>
+  </div>
+
+  <!-- Milestone Board -->
+  <div class="board-container" id="milestone-view" style="display: none;">
+    <div class="kanban-board" id="milestone-board">
+      <!-- Milestone stages will be dynamically added here -->
+    </div>
+  </div>
+
+  <!-- Quote/Estimate Board -->
+  <div class="board-container" id="quotes-view" style="display: none;">
+    <div class="kanban-board" id="quotes-board">
+      <!-- Quote/Estimate stage will be dynamically added here -->
+    </div>
+  </div>
+
+  <!-- Add/Edit Job Modal -->
+  <div class="modal" id="job-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modal-title">New Job</h2>
+        <button class="close-modal">&times;</button>
+      </div>
+      <form id="job-form">
+        <input type="hidden" id="job-id">
+        <input type="hidden" id="customer-id">
+        <input type="hidden" id="job-name">
+
+        <div class="form-group">
+          <label for="customer-select">Customer</label>
+          <div style="display: flex; gap: 10px;">
+            <select id="customer-select" style="flex: 1;" required>
+              <option value="">Select Customer...</option>
+            </select>
+            <button type="button" class="btn btn-secondary" id="add-customer-btn" style="white-space: nowrap;">+ New Customer</button>
+          </div>
+        </div>
+
+        <div class="form-group" id="new-customer-form" style="display: none; border: 2px solid #b8ae97; padding: 15px; border-radius: 8px; background: rgba(184, 174, 151, 0.05);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <label style="margin: 0; font-weight: 700; color: #b8ae97;">New Customer Details</label>
+            <button type="button" class="btn btn-secondary" id="cancel-new-customer-btn" style="padding: 4px 12px; font-size: 0.85rem;">Cancel</button>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="new-customer-name">Customer Name *</label>
+              <input type="text" id="new-customer-name">
+            </div>
+            <div class="form-group">
+              <label for="new-customer-email">Email</label>
+              <input type="email" id="new-customer-email">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="new-customer-phone">Phone</label>
+              <input type="tel" id="new-customer-phone">
+            </div>
+            <div class="form-group">
+              <label for="new-customer-address">Address</label>
+              <input type="text" id="new-customer-address">
+            </div>
+          </div>
+          <button type="button" class="btn btn-success" id="save-customer-btn">Save Customer</button>
+        </div>
+
+        <div class="form-group">
+          <label for="job-address">Job Address</label>
+          <input type="text" id="job-address">
+        </div>
+
+        <div class="form-group">
+          <label for="job-email">Email</label>
+          <input type="email" id="job-email">
+        </div>
+
+        <div class="form-group">
+          <label for="job-color">Job Color</label>
+          <input type="text" id="job-color">
+        </div>
+
+        <!-- Quote/Estimate Section -->
+        <div class="quote-section" id="quote-section">
+          <div class="section-header">Estimate Line Items</div>
+
+          <div class="estimate-items-table" style="margin-bottom: 15px;">
+            <table style="width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr style="background: #3a3a38; color: #b8ae97;">
+                  <th style="padding: 8px; text-align: left; width: 20%;">Service</th>
+                  <th style="padding: 8px; text-align: left; width: 30%;">Description</th>
+                  <th style="padding: 8px; text-align: center; width: 10%;">Qty</th>
+                  <th style="padding: 8px; text-align: center; width: 10%;">SqFt</th>
+                  <th style="padding: 8px; text-align: right; width: 13%;">Rate</th>
+                  <th style="padding: 8px; text-align: right; width: 15%;">Amount</th>
+                  <th style="padding: 8px; text-align: center; width: 2%;"></th>
+                </tr>
+              </thead>
+              <tbody id="estimate-items-body">
+                <!-- Line items will be added here -->
+              </tbody>
+            </table>
+          </div>
+
+          <button type="button" class="btn btn-secondary" id="add-line-item-btn">+ Add Line Item</button>
+
+          <div class="estimate-totals" style="margin-top: 20px; padding: 15px; background: rgba(184, 174, 151, 0.1); border-radius: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-weight: 700; color: #b8ae97; font-size: 1.2rem;">QUOTED PRICE:</span>
+              <span id="estimate-total" style="font-weight: 700; color: #b8ae97; font-size: 1.5rem;">$0.00</span>
+            </div>
+          </div>
+
+          <!-- Profit Margin Calculator -->
+          <div style="margin-top: 20px; padding: 15px; border: 2px solid #b8ae97; border-radius: 8px; background: rgba(184, 174, 151, 0.05);">
+            <div class="section-header" style="margin-bottom: 15px;">Profit Analysis</div>
+            <div class="form-group">
+              <label for="material-cost-input">Material Cost (Your Cost)</label>
+              <div class="currency-input-wrapper">
+                <span class="currency-prefix">$</span>
+                <input type="number" id="material-cost-input" step="0.01" min="0" placeholder="0.00">
+              </div>
+            </div>
+            <div class="profit-display" id="profit-display" style="margin-top: 10px;">
+              <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #3a3a38;">
+                <span style="color: #9a9189;">Quoted Price:</span>
+                <span id="profit-quoted" style="font-weight: 600; color: #b8ae97;">$0.00</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #3a3a38;">
+                <span style="color: #9a9189;">Material Cost:</span>
+                <span id="profit-cost" style="font-weight: 600; color: #b8ae97;">$0.00</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; padding: 12px 0;">
+                <span style="font-weight: 700; color: #b8ae97;">Profit Margin:</span>
+                <div style="text-align: right;">
+                  <span id="profit-value" style="font-weight: 700; color: #4caf50; font-size: 1.2rem;">$0.00</span>
+                  <span id="profit-percent" style="display: block; font-size: 0.9rem; color: #81c784;">(0%)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Hidden fields for backwards compatibility -->
+          <input type="hidden" id="material-cost">
+          <input type="hidden" id="quoted-price">
+
+          <!-- Estimate Actions (Generate/Print/Email) -->
+          <div id="estimate-actions-section" style="margin-top: 25px; padding: 20px; border: 2px solid #b8ae97; border-radius: 8px; background: rgba(184, 174, 151, 0.05); display: none;">
+            <div class="section-header" style="margin-bottom: 15px; text-align: center; color: #b8ae97;">Estimate PDF Actions</div>
+
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <button type="button" id="generate-estimate-inline-btn" class="btn btn-success" style="width: 100%; padding: 14px; font-size: 15px;">
+                📝 Generate Estimate PDF
+              </button>
+
+              <div id="estimate-pdf-actions" style="display: none;">
+                <div style="text-align: center; margin-bottom: 12px; padding: 10px; background: rgba(76, 175, 80, 0.1); border-radius: 6px;">
+                  <div style="font-size: 12px; color: #9a9189;">Estimate #</div>
+                  <div id="inline-estimate-number" style="font-size: 18px; color: #4caf50; font-weight: 700;">-</div>
+                </div>
+
+                <div style="display: flex; gap: 10px;">
+                  <button type="button" id="print-estimate-inline-btn" class="btn btn-primary" style="flex: 1; padding: 12px; font-size: 14px;">
+                    🖨️ Print
+                  </button>
+                  <button type="button" id="email-estimate-inline-btn" class="btn btn-primary" style="flex: 1; padding: 12px; font-size: 14px;">
+                    📧 Email
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div id="inline-estimate-status" style="margin-top: 15px; padding: 12px; background: rgba(76, 175, 80, 0.1); border-radius: 6px; display: none;">
+              <div id="inline-estimate-status-text" style="color: #4caf50; text-align: center; font-weight: 600; font-size: 14px;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="stage">Stage</label>
+          <select id="stage">
+            <option value="Quote/Estimate">Quote/Estimate</option>
+            <optgroup label="In Progress">
+              <option value="In Progress - Ready to Cut">Ready to Cut</option>
+              <option value="In Progress - Cut">Cut</option>
+              <option value="In Progress - Paint & Sand">Paint & Sand</option>
+              <option value="In Progress - Assemble">Assemble</option>
+              <option value="In Progress - Ready to Install">Ready to Install</option>
+              <option value="In Progress - Installed">Installed</option>
+              <option value="In Progress - Installed - Finish Work">Installed - Finish Work</option>
+            </optgroup>
+            <option value="Completed">Completed</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="completion-percentage">Completion %</label>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <input type="range" id="completion-percentage" min="0" max="100" step="5" value="0" style="flex: 1;">
+            <span id="completion-percentage-value" style="min-width: 45px; font-weight: 700; color: #b8ae97;">0%</span>
+          </div>
+        </div>
+
+        <div class="form-group" id="finish-work-group" style="display: none;">
+          <label for="finish-work">Finish Work Notes</label>
+          <textarea id="finish-work" rows="3"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="items-needed">Items Needed/Waiting On</label>
+          <textarea id="items-needed" rows="3"></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="install-date">Install Date</label>
+            <input type="date" id="install-date">
+          </div>
+
+          <div class="form-group">
+            <label for="completion-date">Completion Date</label>
+            <input type="date" id="completion-date">
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary cancel-btn">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Job</button>
+          <button type="button" id="estimate-actions-btn" class="btn btn-success" style="display:none;">📄 Estimate Actions</button>
+          <button type="button" id="delete-job-btn" class="btn btn-danger" style="display:none;">Delete</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Estimate Actions Modal -->
+  <div class="modal" id="estimate-actions-modal">
+    <div class="modal-content" style="max-width: 500px;">
+      <div class="modal-header">
+        <h2>Estimate Actions</h2>
+        <button class="close-modal" id="close-estimate-actions">&times;</button>
+      </div>
+      <div style="padding: 30px;">
+        <input type="hidden" id="estimate-job-id">
+
+        <div style="text-align: center; margin-bottom: 25px;">
+          <div style="font-size: 14px; color: #9a9189; margin-bottom: 8px;">ESTIMATE NUMBER</div>
+          <div id="estimate-display-number" style="font-size: 24px; color: #b8ae97; font-weight: 700;">Not Generated</div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <button id="generate-estimate-btn" class="btn btn-success" style="width: 100%; font-size: 16px; padding: 16px;">📝 Generate New Estimate PDF</button>
+          <button id="print-estimate-btn" class="btn btn-primary" style="width: 100%; display: none; font-size: 16px; padding: 16px;">🖨️ Print Estimate</button>
+          <button id="email-estimate-btn" class="btn btn-primary" style="width: 100%; display: none; font-size: 16px; padding: 16px;">📧 Email via Outlook</button>
+          <button id="download-estimate-btn" class="btn btn-secondary" style="width: 100%; display: none; font-size: 16px; padding: 16px;">📥 Download PDF</button>
+        </div>
+
+        <div id="estimate-status" style="margin-top: 20px; padding: 15px; background: rgba(76, 175, 80, 0.1); border-radius: 8px; display: none;">
+          <div id="estimate-status-text" style="color: #4caf50; text-align: center; font-weight: 600;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin Panel Modal -->
+  <div class="modal" id="admin-modal">
+    <div class="modal-content admin-modal-content">
+      <div class="modal-header">
+        <h2>User Management</h2>
+        <button class="close-modal" id="close-admin-modal">&times;</button>
+      </div>
+
+      <div class="admin-panel">
+        <div class="admin-section">
+          <h3>Add New User</h3>
+          <form id="add-user-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="new-username">Username</label>
+                <input type="text" id="new-username" required>
+              </div>
+              <div class="form-group">
+                <label for="new-password">Password</label>
+                <input type="password" id="new-password" required>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="new-fullname">Full Name</label>
+                <input type="text" id="new-fullname" required>
+              </div>
+              <div class="form-group">
+                <label for="new-role">Role</label>
+                <select id="new-role" required>
+                  <option value="employee">Employee (Full Access)</option>
+                  <option value="job-floor">Job Floor (No Invoiced Tab)</option>
+                  <option value="admin">Administrator</option>
+                </select>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Add User</button>
+          </form>
+        </div>
+
+        <div class="admin-section">
+          <h3>Existing Users</h3>
+          <table class="users-table">
+            <thead>
+              <tr>
+                <th>Username</th>
+                <th>Full Name</th>
+                <th>Role</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="users-list">
+              <!-- Users will be populated here -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit User Modal -->
+  <div class="modal" id="edit-user-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Edit User</h2>
+        <button class="close-modal" id="close-edit-user-modal">&times;</button>
+      </div>
+      <form id="edit-user-form">
+        <input type="hidden" id="edit-user-id">
+
+        <div class="form-group">
+          <label for="edit-username">Username</label>
+          <input type="text" id="edit-username" disabled>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-fullname">Full Name</label>
+          <input type="text" id="edit-fullname" required>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-role">Role</label>
+          <select id="edit-role" required>
+            <option value="employee">Employee (Full Access)</option>
+            <option value="job-floor">Job Floor (No Invoiced Tab)</option>
+            <option value="admin">Administrator</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-password">New Password (leave blank to keep current)</label>
+          <input type="password" id="edit-password" placeholder="Leave blank to keep current password">
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" id="cancel-edit-user">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+          <button type="button" id="delete-user-btn" class="btn btn-danger">Delete User</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="toast"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="paint-colors.js?v=20260120i"></script>
+  <script src="estimate-handler.js?v=20260202b"></script>
+  <script src="estimate-actions.js?v=20260202"></script>
+  <script src="app.js?v=20260130"></script>
+
+  <!-- PWA Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then((registration) => {
+            console.log('Service Worker registered:', registration.scope);
+          })
+          .catch((error) => {
+            console.log('Service Worker registration failed:', error);
+          });
+      });
+    }
+  </script>
+</body>
+</html>

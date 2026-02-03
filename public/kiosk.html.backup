@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#b8ae97">
+  <title>3 Notch Cabinet Job Board</title>
+  <link rel="manifest" href="kiosk-manifest.json">
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="stylesheet" href="kiosk.css?v=20260121pills">
+</head>
+<body>
+  <div class="kiosk-header">
+    <img src="logo.png" alt="3 Notch Cabinet Co" class="kiosk-logo">
+    <h1>JOB BOARD</h1>
+    <div class="kiosk-time" id="kiosk-time"></div>
+  </div>
+
+  <div class="kiosk-container">
+    <table class="kiosk-table" id="kiosk-table">
+      <thead>
+        <tr>
+          <th>Job Name</th>
+          <th>Job Address</th>
+          <th>Job Color</th>
+          <th>Progress</th>
+          <th>Items Needed</th>
+          <th>Install Date</th>
+        </tr>
+      </thead>
+      <tbody id="kiosk-body">
+        <tr>
+          <td colspan="6" class="loading-cell">Loading jobs...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="paint-colors.js"></script>
+  <script src="kiosk.js"></script>
+</body>
+</html>
