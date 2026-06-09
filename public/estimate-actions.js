@@ -54,6 +54,22 @@ document.getElementById('generate-estimate-inline-btn')?.addEventListener('click
     currentEstimateJobId = jobId;
   }
 
+  statusText.textContent = 'Saving line items...';
+
+  // Save line items to database before generating PDF
+  try {
+    const lineItems = window.estimateHandler ? window.estimateHandler.getLineItems() : [];
+    if (lineItems.length > 0) {
+      await fetch(`/api/jobs/${jobId}/estimate-items/bulk`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: lineItems })
+      });
+    }
+  } catch (e) {
+    console.error('Error saving line items:', e);
+  }
+
   statusText.textContent = 'Generating estimate PDF...';
 
   try {

@@ -73,8 +73,12 @@ function getPaintColor(colorInput) {
     return colorInput;
   }
 
+  // Strip SW color codes like "SW 7048 - " or "SW7048 - "
+  let cleanedInput = colorInput.trim();
+  cleanedInput = cleanedInput.replace(/^SW\s*\d+\s*-?\s*/i, '');
+
   // Look up paint color name (case-insensitive)
-  const lookup = colorInput.toLowerCase().trim();
+  const lookup = cleanedInput.toLowerCase().trim();
   return paintColors[lookup] || colorInput; // Return original if not found
 }
 
@@ -389,7 +393,7 @@ function createJobCard(job) {
     }
   }
 
-  // Quote details (customer and price) - only for Quote/Estimate stage
+  // Quote/pricing details
   let quoteDetailsHtml = '';
   if (job.stage === 'Quote/Estimate') {
     const customerName = job.customer_name || 'No customer';
@@ -401,6 +405,15 @@ function createJobCard(job) {
         <div class="quote-detail-row"><strong>Customer:</strong> ${customerName}</div>
         <div class="quote-detail-row"><strong>Quote:</strong> ${quotedPrice}</div>
         <div class="quote-detail-row"><strong>Materials:</strong> ${materialCost}</div>
+      </div>
+    `;
+  } else if (job.quoted_price || job.material_cost) {
+    // Compact pricing line for production/milestone boards
+    const quotedPrice = job.quoted_price ? `$${parseFloat(job.quoted_price).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : '-';
+    const materialCost = job.material_cost ? `$${parseFloat(job.material_cost).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : '-';
+    quoteDetailsHtml = `
+      <div class="quote-details compact">
+        <div class="quote-detail-row"><strong>Quote:</strong> ${quotedPrice} | <strong>Materials:</strong> ${materialCost}</div>
       </div>
     `;
   }
@@ -591,6 +604,7 @@ function openQuoteModal() {
 
   // Clear and add one blank line item
   if (window.estimateHandler) {
+    window.estimateHandler.setCabinetData(null);
     window.estimateHandler.clearLineItems();
     // Re-initialize material cost listener
     window.estimateHandler.initMaterialCostListener();
@@ -668,6 +682,7 @@ function openEditJobModal(job) {
 
   // Load line items for this job
   if (window.estimateHandler) {
+    window.estimateHandler.setCabinetData(job.mozaik_cabinet_data);
     window.estimateHandler.loadLineItems(job.id).then(() => {
       // After line items load, re-initialize material cost listener and update profit display
       window.estimateHandler.initMaterialCostListener();
@@ -683,6 +698,13 @@ function openEditJobModal(job) {
   // Update inline estimate actions
   if (window.inlineEstimateActions) {
     window.inlineEstimateActions.updateInlineEstimateActions(job);
+  }
+
+  // Set door order checkbox
+  const isDoorOrder = document.getElementById('is-door-order');
+  if (isDoorOrder) {
+    isDoorOrder.checked = !!job.is_door_order;
+    toggleDoorAccountSelect(isDoorOrder.checked);
   }
 
   // Show/hide finish work field based on stage
@@ -765,9 +787,19 @@ jobForm.addEventListener('submit', async (e) => {
   // Get customer name for backwards compatibility
   const customerName = customerSelect.options[customerSelect.selectedIndex].text;
 
-  // Calculate quoted price from line items
+  // Get quoted price from manual input field (or calculate from line items if available)
   const lineItems = window.estimateHandler ? window.estimateHandler.getLineItems() : [];
-  const quotedPrice = window.estimateHandler ? window.estimateHandler.updateEstimateTotal() : 0;
+  const quotedPriceInput = document.getElementById('quoted-price-input');
+  let quotedPrice;
+  if (quotedPriceInput && quotedPriceInput.value) {
+    // Use manual input if provided
+    quotedPrice = parseFloat(quotedPriceInput.value) || 0;
+  } else if (window.estimateHandler && lineItems.length > 0) {
+    // Calculate from line items if no manual input
+    quotedPrice = window.estimateHandler.updateEstimateTotal();
+  } else {
+    quotedPrice = null; // Send null instead of 0 to preserve existing value
+  }
 
   // Get material cost
   const materialCostInput = document.getElementById('material-cost-input');
@@ -787,7 +819,8 @@ jobForm.addEventListener('submit', async (e) => {
     completion_date: document.getElementById('completion-date').value,
     material_cost: materialCost,
     quoted_price: quotedPrice,
-    completion_percentage: parseInt(document.getElementById('completion-percentage').value) || 0
+    completion_percentage: parseInt(document.getElementById('completion-percentage').value) || 0,
+    is_door_order: document.getElementById('is-door-order')?.checked ? 1 : 0
   };
 
   try {
@@ -867,9 +900,36 @@ function updateProfitDisplay() {
   }
 }
 
+// Door order toggle
+function toggleDoorAccountSelect(show) {
+  const wrapper = document.getElementById('door-account-select-wrapper');
+  if (wrapper) wrapper.style.display = show ? 'block' : 'none';
+  if (show) loadDoorAccounts();
+}
+
+async function loadDoorAccounts() {
+  try {
+    const resp = await fetch('/api/door-accounts');
+    const accounts = await resp.json();
+    const select = document.getElementById('door-account-select');
+    if (!select) return;
+    select.innerHTML = '<option value="">Assign to Door Account...</option>' +
+      '<option value="new">+ Create New Account</option>' +
+      accounts.map(a => `<option value="${a.id}">${a.customer_name}</option>`).join('');
+  } catch (e) { console.error('Failed to load door accounts:', e); }
+}
+
 // Event listeners
 function setupEventListeners() {
   newQuoteBtn.addEventListener('click', openQuoteModal);
+
+  // Door order checkbox toggle
+  const isDoorOrderCb = document.getElementById('is-door-order');
+  if (isDoorOrderCb) {
+    isDoorOrderCb.addEventListener('change', function() {
+      toggleDoorAccountSelect(this.checked);
+    });
+  }
 
   // Quote field listeners for profit calculation
   document.getElementById('material-cost').addEventListener('input', updateProfitDisplay);
@@ -1182,6 +1242,16 @@ function refreshIfNeeded() {
 // Generate estimate PDF
 async function generateEstimate(jobId) {
   try {
+    // Save line items to database first
+    const lineItems = window.estimateHandler ? window.estimateHandler.getLineItems() : [];
+    if (lineItems.length > 0) {
+      await fetch(`/api/jobs/${jobId}/estimate-items/bulk`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: lineItems })
+      });
+    }
+
     showToast('Generating estimate...', 'info');
 
     const response = await fetch(`/api/jobs/${jobId}/generate-estimate`, {

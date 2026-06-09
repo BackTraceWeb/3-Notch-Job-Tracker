@@ -886,7 +886,7 @@ async function viewCustomer(customerId) {
           return `
             <div style="margin-bottom: 15px; padding: 15px; background: #2a2a28; border-radius: 8px; border: 1px solid #3a3a38;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <div style="font-weight: 700; color: #b8ae97; font-size: 1rem;">${job.job_name}</div>
+                <div style="font-weight: 700; color: #b8ae97; font-size: 1rem;">${job.job_name}${job.job_identifier ? ` <span style="background: rgba(33, 150, 243, 0.2); color: #64b5f6; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600;">${job.job_identifier}</span>` : ''}</div>
                 <span style="background: rgba(184, 174, 151, 0.2); padding: 4px 12px; border-radius: 12px; font-size: 0.8rem; font-weight: 700;">${job.stage}</span>
               </div>
               ${job.job_address ? `<div style="color: #9a9189; font-size: 0.9rem; margin-bottom: 8px;">${job.job_address}</div>` : ''}
@@ -991,6 +991,25 @@ document.getElementById('delete-customer-btn').addEventListener('click', async (
     console.error('Error deleting customer:', error);
     showToast('Failed to delete customer', 'error');
   }
+});
+
+// Socket.IO for real-time sync
+const socket = io();
+
+socket.on('job-created', () => {
+  loadDashboardData();
+});
+
+socket.on('job-updated', () => {
+  loadDashboardData();
+});
+
+socket.on('job-deleted', () => {
+  loadDashboardData();
+});
+
+socket.on('reconnect', () => {
+  loadDashboardData();
 });
 
 // Initialize

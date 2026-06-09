@@ -1801,3 +1801,59 @@ textarea {
   font-weight: 700;
   opacity: 0.8;
 }
+
+/* === Invoice Tracking Input Fixes === */
+.price-input {
+  flex: 1;
+  padding: 8px 8px 8px 0;
+  background: transparent;
+  border: none;
+  font-size: 14px;
+  font-family: 'Oswald', Arial, sans-serif;
+  color: #4caf50;
+  font-weight: 600;
+  min-width: 60px;
+  width: 100%;
+}
+
+.price-input:focus {
+  outline: none;
+}
+
+.price-input::placeholder {
+  color: #666;
+}
+
+.price-cell .invoice-amount-wrapper {
+  min-width: 110px;
+}
+
+/* Bigger invoice amount inputs */
+.invoice-amount-input {
+  font-size: 14px !important;
+  padding: 8px 8px 8px 0 !important;
+  min-width: 60px;
+}
+
+/* Bigger date inputs */
+.whiteboard-invoice-input {
+  font-size: 13px !important;
+  padding: 8px !important;
+  min-width: 155px;
+}
+
+/* Bigger selects */
+.invoice-type-select {
+  font-size: 13px !important;
+  padding: 8px 12px !important;
+}
+
+.whiteboard-stage-select {
+  font-size: 13px !important;
+  padding: 8px 12px !important;
+}
+
+/* Invoice cells wider */
+.whiteboard-invoice-cell {
+  min-width: 300px !important;
+}

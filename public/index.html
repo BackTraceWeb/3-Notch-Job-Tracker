@@ -30,6 +30,7 @@
     <div class="header-right">
       <span id="user-name"></span>
       <button id="dashboard-btn" class="btn btn-dashboard" onclick="window.location.href='dashboard.html'">📊 Dashboard</button>
+      <button class="btn btn-dashboard" onclick="window.location.href='door-invoices.html'">Door Invoicing</button>
       <button id="new-quote-btn" class="btn btn-success">+ New Quote/Job</button>
       <button id="admin-btn" class="btn btn-admin" style="display: none;">⚙️ Admin</button>
       <button id="logout-btn" class="btn btn-secondary">Logout</button>
@@ -134,6 +135,18 @@
           <input type="text" id="job-identifier" placeholder="e.g., 174 spec, Downtown Office">
         </div>
 
+        <div class="form-group" style="display: flex; align-items: center; gap: 12px;">
+          <label style="margin: 0; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+            <input type="checkbox" id="is-door-order" style="width: 18px; height: 18px; accent-color: #b8ae97;">
+            <span>Door Order</span>
+          </label>
+          <div id="door-account-select-wrapper" style="display: none; flex: 1;">
+            <select id="door-account-select" style="width: 100%;">
+              <option value="">Assign to Door Account...</option>
+            </select>
+          </div>
+        </div>
+
         <!-- Job Pricing Display (Read-Only) -->
         <div id="job-pricing-display" style="display: none; margin: 20px 0; padding: 15px; border: 2px solid #b8ae97; border-radius: 8px; background: rgba(184, 174, 151, 0.05);">
           <div style="text-align: center; margin-bottom: 10px;">
@@ -203,6 +216,36 @@
           <!-- Hidden fields for backwards compatibility -->
           <input type="hidden" id="material-cost">
           <input type="hidden" id="quoted-price">
+
+
+          <!-- Estimate Line Items -->
+          <div id="line-items-section" style="margin-top: 25px; padding: 20px; border: 2px solid #b8ae97; border-radius: 8px; background: rgba(184, 174, 151, 0.05);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+              <div class="section-header" style="color: #b8ae97; font-size: 1.1rem;">Estimate Line Items</div>
+              <div style="display: flex; gap: 8px;">
+                <button type="button" id="import-mozaik-btn" class="btn" style="padding: 8px 14px; background: #2a2a28; color: #b8ae97; border: 1px solid #b8ae97; border-radius: 6px; font-size: 13px; cursor: pointer; display: none;">Import from Mozaik</button>
+                <button type="button" id="add-line-item-btn" class="btn" style="padding: 8px 14px; background: #4caf50; color: white; border: none; border-radius: 6px; font-size: 13px; cursor: pointer; font-weight: 600;">+ Add Line</button>
+              </div>
+            </div>
+            <div style="overflow-x: auto;">
+              <table style="width: 100%; border-collapse: collapse; min-width: 500px;">
+                <thead>
+                  <tr style="background: #2a2a28;">
+                    <th style="padding: 10px 12px; text-align: left; color: #b8ae97; font-size: 13px; font-weight: 600;">Description</th>
+                    <th style="padding: 10px 8px; text-align: center; color: #b8ae97; font-size: 13px; font-weight: 600; width: 70px;">Qty</th>
+                    <th style="padding: 10px 8px; text-align: right; color: #b8ae97; font-size: 13px; font-weight: 600; width: 100px;">Rate</th>
+                    <th style="padding: 10px 8px; text-align: right; color: #b8ae97; font-size: 13px; font-weight: 600; width: 100px;">Amount</th>
+                    <th style="width: 40px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="estimate-items-body"></tbody>
+              </table>
+            </div>
+            <div style="text-align: right; margin-top: 15px; padding: 12px; background: #2a2a28; border-radius: 6px;">
+              <span style="color: #9a9189; font-size: 0.9rem;">Estimate Total: </span>
+              <span id="estimate-total" style="font-weight: 700; color: #4caf50; font-size: 1.3rem;">$0.00</span>
+            </div>
+          </div>
 
           <!-- Estimate Actions (Generate/Print/Email) -->
           <div id="estimate-actions-section" style="margin-top: 25px; padding: 20px; border: 2px solid #b8ae97; border-radius: 8px; background: rgba(184, 174, 151, 0.05); display: none;">
@@ -430,9 +473,9 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="paint-colors.js?v=20260120i"></script>
-  <script src="estimate-handler.js?v=20260202c"></script>
-  <script src="estimate-actions.js?v=20260202"></script>
-  <script src="app.js?v=20260202"></script>
+  <script src="estimate-handler.js?v=20260206a"></script>
+  <script src="estimate-actions.js?v=20260206b"></script>
+  <script src="app.js?v=20260206b"></script>
 
   <!-- PWA Service Worker Registration -->
   <script>

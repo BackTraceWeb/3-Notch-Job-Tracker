@@ -234,7 +234,13 @@ function updateCounts() {
 }
 
 // Socket.IO listeners for real-time updates
-socket.on('job-updated', (job) => {
+socket.on('job-created', (job) => {
+  jobs.push(job);
+  renderProductionBoard();
+});
+
+socket.on('job-updated', (data) => {
+  const job = data.job || data; // Server sends {job, movedBy}
   const index = jobs.findIndex(j => j.id === job.id);
   if (index !== -1) {
     jobs[index] = job;
@@ -244,7 +250,8 @@ socket.on('job-updated', (job) => {
   renderProductionBoard();
 });
 
-socket.on('job-deleted', (jobId) => {
+socket.on('job-deleted', (data) => {
+  const jobId = data.jobId || data; // Server sends {jobId}
   jobs = jobs.filter(j => j.id !== jobId);
   renderProductionBoard();
 });

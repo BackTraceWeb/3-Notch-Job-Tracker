@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Door Invoicing | 3 Notch Cabinet Co</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;700&display=swap">
+  <style>
+    .di-container {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .di-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid #b8ae97;
+    }
+
+    .di-title {
+      font-size: 2rem;
+      color: #b8ae97;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+    }
+
+    .di-controls {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .month-picker {
+      background: #2a2a28;
+      color: #e5e3df;
+      border: 2px solid #3a3a38;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-family: 'Oswald', Arial, sans-serif;
+      font-size: 1rem;
+    }
+
+    .month-picker:focus {
+      border-color: #b8ae97;
+      outline: none;
+    }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+
+    .stat-card {
+      background: #2a2a28;
+      border: 2px solid #3a3a38;
+      border-radius: 8px;
+      padding: 18px;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      color: #b8ae97;
+      font-weight: 700;
+      margin-bottom: 5px;
+    }
+
+    .stat-label {
+      font-size: 0.85rem;
+      color: #9a9189;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .di-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .di-tab {
+      background: #2a2a28;
+      color: #b8ae97;
+      border: 2px solid #3a3a38;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-family: 'Oswald', Arial, sans-serif;
+      letter-spacing: 0.05em;
+    }
+
+    .di-tab:hover { border-color: #b8ae97; background: rgba(184, 174, 151, 0.1); }
+    .di-tab.active { background: #b8ae97; color: #191917; border-color: #b8ae97; }
+
+    .di-panel { display: none; }
+    .di-panel.active { display: block; }
+
+    .accounts-layout {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 20px;
+    }
+
+    .account-list {
+      background: #2a2a28;
+      border: 2px solid #3a3a38;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .account-list-header {
+      background: #b8ae97;
+      color: #191917;
+      padding: 12px 16px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .account-item {
+      padding: 12px 16px;
+      border-bottom: 1px solid #3a3a38;
+      cursor: pointer;
+      transition: background 0.2s;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .account-item:hover { background: rgba(184, 174, 151, 0.08); }
+    .account-item.selected { background: rgba(184, 174, 151, 0.15); border-left: 3px solid #b8ae97; }
+
+    .account-name { font-weight: 600; color: #e5e3df; }
+    .account-total { color: #b8ae97; font-weight: 700; font-size: 1.1rem; }
+
+    .charges-panel {
+      background: #2a2a28;
+      border: 2px solid #3a3a38;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .charges-header {
+      background: #b8ae97;
+      color: #191917;
+      padding: 12px 16px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .charges-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .charges-table th {
+      background: #3a3a38;
+      color: #b8ae97;
+      padding: 10px 12px;
+      text-align: left;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .charges-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #3a3a38;
+      color: #e5e3df;
+      font-size: 0.9rem;
+    }
+
+    .charges-table tr:hover { background: rgba(184, 174, 151, 0.05); }
+
+    .source-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .source-portal { background: rgba(33, 150, 243, 0.2); color: #64b5f6; }
+    .source-mozaik { background: rgba(156, 39, 176, 0.2); color: #ba68c8; }
+    .source-manual { background: rgba(255, 152, 0, 0.2); color: #ffa726; }
+
+    .status-draft { background: rgba(255, 152, 0, 0.2); color: #ffa726; }
+    .status-invoiced { background: rgba(33, 150, 243, 0.2); color: #64b5f6; }
+    .status-paid { background: rgba(76, 175, 80, 0.2); color: #81c784; }
+    .status-pending { background: rgba(255, 152, 0, 0.2); color: #ffa726; }
+
+    .status-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .tally-card {
+      background: #2a2a28;
+      border: 2px solid #3a3a38;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      overflow: hidden;
+    }
+
+    .tally-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 20px;
+      background: #3a3a38;
+    }
+
+    .tally-name { font-weight: 700; color: #b8ae97; font-size: 1.1rem; }
+    .tally-total { font-weight: 700; color: #e5e3df; font-size: 1.3rem; }
+
+    .tally-body { padding: 15px 20px; }
+
+    .tally-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      border-bottom: 1px solid #3a3a38;
+      font-size: 0.9rem;
+    }
+
+    .tally-adjust {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 2px solid #b8ae97;
+    }
+
+    .tally-adjust input {
+      background: #191917;
+      border: 1px solid #3a3a38;
+      color: #e5e3df;
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-family: 'Oswald', Arial, sans-serif;
+      width: 100px;
+    }
+
+    .tally-adjust input:focus { border-color: #b8ae97; outline: none; }
+
+    .unlinked-section {
+      background: rgba(255, 152, 0, 0.05);
+      border: 2px solid rgba(255, 152, 0, 0.3);
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+
+    .unlinked-header {
+      color: #ffa726;
+      font-weight: 700;
+      margin-bottom: 10px;
+      font-size: 1rem;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: #9a9189;
+    }
+
+    /* 12-Month Visual */
+    .year-visual {
+      background: #2a2a28;
+      border: 2px solid #3a3a38;
+      border-radius: 8px;
+      padding: 18px 20px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .year-visual.show { display: block; }
+
+    .year-title {
+      font-size: 0.85rem;
+      color: #9a9189;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .year-title span { color: #b8ae97; font-weight: 700; }
+
+    .year-bars {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 6px;
+      align-items: end;
+      height: 120px;
+      margin-bottom: 6px;
+    }
+
+    .month-bar-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100%;
+      justify-content: flex-end;
+    }
+
+    .month-bar-amount {
+      font-size: 0.65rem;
+      color: #b8ae97;
+      font-weight: 700;
+      margin-bottom: 4px;
+      white-space: nowrap;
+    }
+
+    .month-bar {
+      width: 100%;
+      min-height: 4px;
+      border-radius: 4px 4px 0 0;
+      transition: height 0.3s;
+    }
+
+    .month-bar.paid { background: linear-gradient(180deg, #66bb6a, #388e3c); }
+    .month-bar.invoiced { background: linear-gradient(180deg, #42a5f5, #1565c0); }
+    .month-bar.pending { background: linear-gradient(180deg, #ffa726, #e65100); }
+    .month-bar.draft { background: linear-gradient(180deg, #ffa726, #e65100); }
+    .month-bar.empty { background: #3a3a38; min-height: 4px; }
+
+    .year-labels {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 6px;
+      text-align: center;
+    }
+
+    .month-label {
+      font-size: 0.7rem;
+      color: #9a9189;
+      font-weight: 600;
+    }
+
+    .month-label.current { color: #b8ae97; font-weight: 700; }
+
+    .year-legend {
+      display: flex;
+      gap: 16px;
+      margin-top: 12px;
+      justify-content: center;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.75rem;
+      color: #9a9189;
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+    }
+
+    .legend-dot.paid { background: #4caf50; }
+    .legend-dot.invoiced { background: #2196f3; }
+    .legend-dot.pending { background: #ffa726; }
+
+    .btn-sm {
+      padding: 5px 12px;
+      font-size: 0.8rem;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      font-family: 'Oswald', Arial, sans-serif;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .btn-gold { background: #b8ae97; color: #191917; }
+    .btn-gold:hover { background: #c9bf9f; }
+    .btn-green { background: #4caf50; color: white; }
+    .btn-green:hover { background: #43a047; }
+    .btn-blue { background: #2196f3; color: white; }
+    .btn-blue:hover { background: #1976d2; }
+    .btn-red { background: #c24a40; color: white; }
+    .btn-red:hover { background: #a93b32; }
+
+    /* Modal */
+    .di-modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.7);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .di-modal.show { display: flex; }
+
+    .di-modal-content {
+      background: #2a2a28;
+      border: 2px solid #b8ae97;
+      border-radius: 8px;
+      padding: 25px;
+      max-width: 500px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    .di-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #3a3a38;
+    }
+
+    .di-modal-header h3 { color: #b8ae97; font-size: 1.2rem; }
+
+    .di-modal-close {
+      background: none;
+      border: none;
+      color: #9a9189;
+      font-size: 1.5rem;
+      cursor: pointer;
+    }
+
+    .di-form-group {
+      margin-bottom: 15px;
+    }
+
+    .di-form-group label {
+      display: block;
+      color: #b8ae97;
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-bottom: 5px;
+    }
+
+    .di-form-group input,
+    .di-form-group select,
+    .di-form-group textarea {
+      width: 100%;
+      background: #191917;
+      border: 1px solid #3a3a38;
+      color: #e5e3df;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-family: 'Oswald', Arial, sans-serif;
+      font-size: 0.95rem;
+    }
+
+    .di-form-group input:focus,
+    .di-form-group select:focus,
+    .di-form-group textarea:focus {
+      border-color: #b8ae97;
+      outline: none;
+    }
+
+    .history-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #2a2a28;
+      border: 2px solid #3a3a38;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .history-table th {
+      background: #3a3a38;
+      color: #b8ae97;
+      padding: 12px 15px;
+      text-align: left;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .history-table td {
+      padding: 12px 15px;
+      border-bottom: 1px solid #3a3a38;
+      color: #e5e3df;
+      font-size: 0.9rem;
+    }
+
+    .history-table tr:hover { background: rgba(184, 174, 151, 0.05); }
+
+    @media (max-width: 768px) {
+      .accounts-layout { grid-template-columns: 1fr; }
+      .stats-row { grid-template-columns: 1fr 1fr; }
+      .di-controls { flex-wrap: wrap; }
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-family: 'Oswald', Arial, sans-serif;
+      z-index: 2000;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .toast.show { opacity: 1; }
+    .toast-success { background: #4caf50; color: white; }
+    .toast-error { background: #c24a40; color: white; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-left">
+      <img src="logo.png" alt="3 Notch Logo" class="header-logo">
+      <h1>DOOR INVOICING</h1>
+    </div>
+    <div class="header-right">
+      <button class="btn btn-secondary" onclick="window.location.href='index.html'">Back to Tracker</button>
+      <button class="btn btn-dashboard" onclick="window.location.href='dashboard.html'">Dashboard</button>
+      <span id="user-name"></span>
+      <button class="btn btn-secondary" id="logout-btn">Logout</button>
+    </div>
+  </div>
+
+  <div class="di-container">
+    <div class="di-header">
+      <h2 class="di-title">NET 10 DOOR ACCOUNTS</h2>
+      <div class="di-controls">
+        <input type="month" id="month-picker" class="month-picker">
+        <button class="btn btn-primary" id="new-account-btn">+ New Account</button>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-value" id="stat-accounts">0</div>
+        <div class="stat-label">Active Accounts</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-charges">0</div>
+        <div class="stat-label">Pending Charges</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-total">$0.00</div>
+        <div class="stat-label">Month Total</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-overdue">0</div>
+        <div class="stat-label">Overdue</div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="di-tabs">
+      <button class="di-tab active" data-tab="accounts">Accounts & Charges</button>
+      <button class="di-tab" data-tab="tally">Monthly Tally</button>
+      <button class="di-tab" data-tab="history">Payment History</button>
+    </div>
+
+    <!-- Accounts & Charges Tab -->
+    <div class="di-panel active" id="panel-accounts">
+      <!-- Unlinked Orders -->
+      <div class="unlinked-section" id="unlinked-section" style="display: none;">
+        <div class="unlinked-header">Unlinked Portal Orders</div>
+        <div id="unlinked-list"></div>
+      </div>
+
+      <!-- 12-Month Account Visual -->
+      <div class="year-visual" id="year-visual">
+        <div class="year-title">
+          <span id="year-visual-name">Account Overview</span>
+          <span id="year-visual-total"></span>
+        </div>
+        <div class="year-bars" id="year-bars"></div>
+        <div class="year-labels" id="year-labels"></div>
+        <div class="year-legend">
+          <div class="legend-item"><div class="legend-dot paid"></div> Paid</div>
+          <div class="legend-item"><div class="legend-dot invoiced"></div> Invoiced</div>
+          <div class="legend-item"><div class="legend-dot pending"></div> Pending</div>
+        </div>
+      </div>
+
+      <div class="accounts-layout">
+        <div class="account-list">
+          <div class="account-list-header">
+            <span>ACCOUNTS</span>
+          </div>
+          <div id="account-list-body">
+            <div class="empty-state">No accounts yet</div>
+          </div>
+        </div>
+        <div class="charges-panel">
+          <div class="charges-header">
+            <span id="charges-title">Select an account</span>
+            <button class="btn-sm btn-gold" id="add-charge-btn" style="display:none;">+ Add Charge</button>
+          </div>
+          <div id="charges-body">
+            <div class="empty-state">Select an account to view charges</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Monthly Tally Tab -->
+    <div class="di-panel" id="panel-tally">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div style="color: #9a9189; font-size: 0.9rem;">Generate month-end tallies to review before entering into QuickBooks</div>
+        <button class="btn btn-primary" id="generate-tallies-btn">Generate Month-End Tallies</button>
+      </div>
+      <div id="tally-list">
+        <div class="empty-state">No tallies for this period. Click "Generate Month-End Tallies" to create them.</div>
+      </div>
+      <div style="margin-top: 20px; text-align: right;" id="tally-actions" style="display:none;">
+        <button class="btn btn-primary" id="mark-all-invoiced-btn" style="display:none;">Mark All as Invoiced (Entered in QB)</button>
+      </div>
+    </div>
+
+    <!-- Payment History Tab -->
+    <div class="di-panel" id="panel-history">
+      <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+        <select id="history-account-filter" class="month-picker" style="min-width: 200px;">
+          <option value="">All Accounts</option>
+        </select>
+        <select id="history-status-filter" class="month-picker">
+          <option value="">All Statuses</option>
+          <option value="draft">Draft</option>
+          <option value="invoiced">Invoiced</option>
+          <option value="paid">Paid</option>
+        </select>
+      </div>
+      <table class="history-table">
+        <thead>
+          <tr>
+            <th>Account</th>
+            <th>Period</th>
+            <th>Subtotal</th>
+            <th>Adjustment</th>
+            <th>Total</th>
+            <th>Due Date</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="history-body">
+          <tr><td colspan="8" class="empty-state">No invoices yet</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- New Account Modal -->
+  <div class="di-modal" id="account-modal">
+    <div class="di-modal-content">
+      <div class="di-modal-header">
+        <h3 id="account-modal-title">New Door Account</h3>
+        <button class="di-modal-close" onclick="closeAccountModal()">&times;</button>
+      </div>
+      <form id="account-form">
+        <input type="hidden" id="account-edit-id">
+        <div class="di-form-group">
+          <label>Customer Name *</label>
+          <input type="text" id="account-name" required>
+        </div>
+        <div class="di-form-group">
+          <label>Email</label>
+          <input type="email" id="account-email">
+        </div>
+        <div class="di-form-group">
+          <label>Notes</label>
+          <textarea id="account-notes" rows="3"></textarea>
+        </div>
+        <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+          <button type="button" class="btn btn-secondary" onclick="closeAccountModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Account</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Charge Modal -->
+  <div class="di-modal" id="charge-modal">
+    <div class="di-modal-content">
+      <div class="di-modal-header">
+        <h3 id="charge-modal-title">Add Charge</h3>
+        <button class="di-modal-close" onclick="closeChargeModal()">&times;</button>
+      </div>
+      <form id="charge-form">
+        <div class="di-form-group">
+          <label>Description *</label>
+          <input type="text" id="charge-description" required placeholder="e.g., MDF Shaker 14x30 White qty 6">
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="di-form-group">
+            <label>Quantity</label>
+            <input type="number" id="charge-qty" value="1" min="1">
+          </div>
+          <div class="di-form-group">
+            <label>Unit Cost ($)</label>
+            <input type="number" id="charge-unit-cost" step="0.01" min="0" value="0">
+          </div>
+        </div>
+        <div class="di-form-group">
+          <label>Order Date</label>
+          <input type="date" id="charge-date">
+        </div>
+        <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+          <button type="button" class="btn btn-secondary" onclick="closeChargeModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Add Charge</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script src="door-invoices.js"></script>
+</body>
+</html>

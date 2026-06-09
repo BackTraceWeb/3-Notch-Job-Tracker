@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>3 Notch Cabinet Co — Job Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles/app.css">
+</head>
+<body>
+<!-- Custom Titlebar -->
+<div class="titlebar" id="titlebar">
+  <div class="titlebar-drag">
+    <img src="/app/logo-transparent.png" height="20" alt="3 Notch">
+    <span>3 Notch Cabinet Co</span>
+  </div>
+  <div class="titlebar-controls">
+    <button onclick="electronAPI.minimize()">&#8211;</button>
+    <button onclick="electronAPI.maximize()">&#9633;</button>
+    <button class="close" onclick="electronAPI.close()">&#10005;</button>
+  </div>
+</div>
+
+<div class="app-container">
+  <!-- Sidebar -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <img src="/app/logo-transparent.png" alt="3 Notch" height="50">
+    </div>
+    <div class="sidebar-nav">
+      <button class="nav-item active" data-view="board" onclick="switchView('board',this)" title="Job Board">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        <span>Board</span>
+      </button>
+      <button class="nav-item" data-view="dashboard" onclick="switchView('dashboard',this)" title="Dashboard">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4v9H3zM10 7h4v14h-4zM17 3h4v18h-4z"/></svg>
+        <span>Dashboard</span>
+      </button>
+      <button class="nav-item" data-view="customers" onclick="switchView('customers',this)" title="Customers">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span>Customers</span>
+      </button>
+      <button class="nav-item" data-view="billing" onclick="switchView('billing',this)" title="Estimates & Invoicing">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+        <span>Billing</span>
+      </button>
+      <button class="nav-item" data-view="doors" onclick="switchView('doors',this)" title="Door Invoicing">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><circle cx="15" cy="12" r="1"/></svg>
+        <span>Doors</span>
+      </button>
+    </div>
+    <div class="sidebar-bottom">
+      <button class="nav-item" data-view="timeclock" onclick="switchView('timeclock',this)" title="Time Clock">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        <span>Clock</span>
+      </button>
+      <button class="nav-item" onclick="electronAPI.openKiosk()" title="Open Kiosk Display">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        <span>Kiosk</span>
+      </button>
+      <button class="nav-item" data-view="settings" onclick="switchView('settings',this)" title="Settings">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        <span>Settings</span>
+      </button>
+      <div class="sidebar-user" id="currentUser">
+        <div class="user-avatar">A</div>
+        <span>Admin</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content Area -->
+  <main class="main-content">
+    <!-- Board View -->
+    <div class="view active" id="view-board">
+      <div class="view-header">
+        <h1>Job Board</h1>
+        <div class="view-actions">
+          <div class="board-switcher">
+            <button class="board-tab active" onclick="switchBoard('production',this)">Production</button>
+            <button class="board-tab" onclick="switchBoard('quotes',this)">Quotes</button>
+            <button class="board-tab" onclick="switchBoard('milestone',this)">Milestone</button>
+          </div>
+          <button class="btn-primary" onclick="openNewJobModal()">+ New Job</button>
+        </div>
+      </div>
+      <div class="kanban-board" id="kanbanBoard"></div>
+    </div>
+
+    <!-- Dashboard View -->
+    <div class="view" id="view-dashboard">
+      <div class="view-header"><h1>Dashboard</h1></div>
+      <div class="stats-grid" id="dashStats"></div>
+      <div class="dash-content" id="dashContent"></div>
+    </div>
+
+    <!-- Customers View -->
+    <div class="view" id="view-customers">
+      <div class="view-header">
+        <h1>Customers</h1>
+        <button class="btn-primary" onclick="openNewQBCustomer()">+ New Customer</button>
+      </div>
+      <div class="data-table-wrap" id="customersTable"></div>
+    </div>
+
+    <!-- Billing View (Estimates + Invoices from QB) -->
+    <div class="view" id="view-billing">
+      <div class="view-header">
+        <h1>Estimates & Invoicing</h1>
+      </div>
+      <div id="billingContent" style="flex:1;overflow-y:auto;padding:16px 24px;"></div>
+    </div>
+
+    <!-- Time Clock View -->
+    <div class="view" id="view-timeclock">
+      <div class="view-header">
+        <h1>Time Clock</h1>
+        <button class="btn-secondary" onclick="loadTimeClock()">Refresh</button>
+      </div>
+      <div class="data-table-wrap" id="timeClockContent" style="padding:16px 24px;"></div>
+    </div>
+
+    <!-- Door Invoicing View -->
+    <div class="view" id="view-doors">
+      <div class="view-header">
+        <h1>Door Invoicing</h1>
+        <div class="view-actions">
+          <select id="invoicePeriod" onchange="loadInvoicePeriod()"></select>
+          <button class="btn-primary" onclick="generateMonthlyInvoices()">Generate Monthly</button>
+        </div>
+      </div>
+      <div class="invoicing-layout" id="invoicingContent"></div>
+    </div>
+
+    <!-- Estimate Modal -->
+    <div class="modal-overlay" id="estimateModal">
+      <div class="modal" style="max-width:800px;">
+        <div class="modal-header">
+          <h3 id="estModalTitle">New Estimate</h3>
+          <button class="modal-close" onclick="closeEstimateModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="estJobId" value="">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Customer *</label>
+              <select id="estCustomer" onchange="fillCustomerInfo()">
+                <option value="">— Select Customer —</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Estimate #</label>
+              <input type="text" id="estNumber" readonly>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Job Name *</label><input type="text" id="estJobName" placeholder="e.g. Kitchen Cabinets"></div>
+            <div class="form-group"><label>Job Address</label><input type="text" id="estAddress"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Email</label><input type="text" id="estEmail"></div>
+            <div class="form-group"><label>Date</label><input type="date" id="estDate"></div>
+          </div>
+          <div class="form-group"><label>Color / Finish</label><input type="text" id="estColor" placeholder="e.g. SW Alabaster, Natural Maple"></div>
+
+          <h3 style="font-size:14px;color:var(--brand);margin:16px 0 8px;text-transform:uppercase;letter-spacing:.5px;">Line Items</h3>
+          <table class="data-table" style="font-size:12px;">
+            <thead>
+              <tr>
+                <th style="width:5%;">#</th>
+                <th style="width:20%;">Category</th>
+                <th style="width:35%;">Description</th>
+                <th style="width:8%;">Qty</th>
+                <th style="width:8%;">Sq Ft</th>
+                <th style="width:10%;">Rate</th>
+                <th style="width:10%;">Amount</th>
+                <th style="width:4%;"></th>
+              </tr>
+            </thead>
+            <tbody id="estLineItems"></tbody>
+          </table>
+          <button style="width:100%;padding:8px;border:1px dashed var(--border);background:none;color:var(--muted);cursor:pointer;border-radius:4px;font-family:'Oswald',sans-serif;margin-top:4px;" onclick="addEstimateLine()">+ Add Line Item</button>
+
+          <div style="text-align:right;margin-top:12px;padding:12px;background:var(--dark);border-radius:6px;">
+            <span style="color:var(--muted);font-size:13px;">Subtotal: </span>
+            <span id="estSubtotal" style="font-size:13px;color:var(--light);">$0.00</span>
+            <br>
+            <span style="color:var(--brand);font-size:22px;font-weight:700;">Total: <span id="estTotal">$0.00</span></span>
+          </div>
+
+          <div class="form-group" style="margin-top:12px;"><label>Notes</label><textarea id="estNotes" rows="2" placeholder="Valid for 30 days. 50% deposit required to begin."></textarea></div>
+
+          <div class="form-actions" style="justify-content:space-between;">
+            <div style="display:flex;gap:8px;">
+              <button class="btn-primary" onclick="saveEstimate()">Save</button>
+              <button class="btn-primary" onclick="saveAndSendEstimate()" style="background:var(--blue);">Save & Send</button>
+              <button class="btn-secondary" onclick="closeEstimateModal()">Cancel</button>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn-secondary" onclick="printEstimate()" style="border-color:var(--brand);">Print / PDF</button>
+              <button class="btn-secondary" onclick="emailEstimate()" style="border-color:var(--blue);color:var(--blue);">Email</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings View -->
+    <div class="view" id="view-settings">
+      <div class="view-header"><h1>Settings</h1></div>
+      <div class="settings-content" id="settingsContent">
+        <div class="settings-section">
+          <h2>Users</h2>
+          <div id="usersList"></div>
+          <button class="btn-primary" onclick="openUserModal()">+ Add User</button>
+        </div>
+        <div class="settings-section">
+          <h2>QuickBooks Integration</h2>
+          <p class="muted">Connect to QuickBooks Online to sync invoices and customers.</p>
+          <button class="btn-secondary" id="qbConnectBtn" onclick="connectQB()">Connect QuickBooks</button>
+        </div>
+        <div class="settings-section">
+          <h2>Server</h2>
+          <div class="setting-row">
+            <label>API Server</label>
+            <input type="text" id="serverUrl" value="https://jobtracker.3notchcabinets.com" onchange="updateServerUrl(this.value)">
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Job Modal -->
+<div class="modal-overlay" id="jobModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="jobModalTitle">New Job</h3>
+      <button class="modal-close" onclick="closeJobModal()">&times;</button>
+    </div>
+    <div class="modal-body" id="jobModalBody"></div>
+  </div>
+</div>
+
+<!-- Customer Modal -->
+<div class="modal-overlay" id="customerModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="customerModalTitle">New Customer</h3>
+      <button class="modal-close" onclick="closeCustomerModal()">&times;</button>
+    </div>
+    <div class="modal-body" id="customerModalBody"></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="/app/paint-colors.js"></script>
+<script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+<script src="scripts/api.js"></script>
+<script src="scripts/board.js"></script>
+<script src="scripts/dashboard.js"></script>
+<script src="scripts/customers.js"></script>
+<script src="scripts/invoicing.js"></script>
+<script src="scripts/estimates.js"></script>
+<script src="scripts/billing.js"></script>
+<script src="scripts/timeclock.js"></script>
+<script src="scripts/app.js"></script>
+</body>
+</html>

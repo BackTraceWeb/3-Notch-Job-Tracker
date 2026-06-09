@@ -1,5 +1,17 @@
 node_modules/
 *.db
+*.db-shm
+*.db-wal
+qb-tokens.json
+*.pdf
+*.bak
+*.bak-*
+*.bak2
+*.broken
+*.backup
+*.backup-*
+backups/
+server.log
 .env
 .DS_Store
 npm-debug.log

@@ -3,6 +3,7 @@
 let customers = [];
 let services = [];
 let estimateItems = [];
+let currentJobCabinetData = null; // Stored mozaik_cabinet_data for import
 
 // Load customers and services
 async function loadCustomersAndServices() {
@@ -101,81 +102,44 @@ document.getElementById('customer-select').addEventListener('change', (e) => {
   }
 });
 
-// Add line item
+// Add line item - simplified QuickBooks style (Description | Qty | Rate | Amount)
 function addLineItem(item = null) {
   const tbody = document.getElementById('estimate-items-body');
   const row = tbody.insertRow();
   row.className = 'estimate-item-row';
 
   const lineItem = item || {
-    service_id: '',
     description: '',
     quantity: 1,
-    sqft: 1,
     rate: 0,
     amount: 0
   };
 
-  // Build services options
-  let servicesOptions = '<option value="">Select...</option>';
-  services.forEach(s => {
-    servicesOptions += `<option value="${s.id}" data-rate="${s.default_rate || 0}">${s.name}</option>`;
-  });
-
   row.innerHTML = `
-    <td style="padding: 10px;">
-      <select class="line-item-service" style="width: 100%; padding: 12px; background: #1e1e1c; color: #e5e3df; border: 2px solid #4caf50; border-radius: 6px; font-size: 16px; font-weight: 600;">
-        ${servicesOptions}
-      </select>
+    <td style="padding: 8px;">
+      <input type="text" class="line-item-description" value="${lineItem.description || ''}"
+             placeholder="e.g. Base Cabinets, Wall Cabinets..."
+             style="width: 100%; padding: 10px; background: #1e1e1c; color: #e5e3df; border: 1px solid #444; border-radius: 4px; font-size: 14px;">
     </td>
-    <td style="padding: 10px;">
-      <input type="text" class="line-item-description" value="${lineItem.description}"
-             style="width: 100%; padding: 12px; background: #1e1e1c; color: #e5e3df; border: 2px solid #4caf50; border-radius: 6px; font-size: 16px; font-weight: 600;">
+    <td style="padding: 8px; text-align: center;">
+      <input type="number" class="line-item-qty" value="${lineItem.quantity || 1}" min="1" step="1"
+             style="width: 60px; padding: 10px; background: #1e1e1c; color: #e5e3df; border: 1px solid #444; border-radius: 4px; text-align: center; font-size: 14px;">
     </td>
-    <td style="padding: 10px; text-align: center;">
-      <input type="number" class="line-item-qty" value="${lineItem.quantity}" min="1" step="1"
-             style="width: 80px; padding: 12px; background: #1e1e1c; color: #e5e3df; border: 2px solid #b8ae97; border-radius: 6px; text-align: center; font-size: 16px; font-weight: 600;">
+    <td style="padding: 8px; text-align: right;">
+      <input type="number" class="line-item-rate" value="${(lineItem.rate || 0).toFixed(2)}" min="0" step="0.01"
+             style="width: 90px; padding: 10px; background: #1e1e1c; color: #e5e3df; border: 1px solid #444; border-radius: 4px; text-align: right; font-size: 14px;">
     </td>
-    <td style="padding: 10px; text-align: center;">
-      <input type="number" class="line-item-sqft" value="${lineItem.sqft || 1}" min="0" step="0.01"
-             style="width: 90px; padding: 12px; background: #1e1e1c; color: #e5e3df; border: 2px solid #b8ae97; border-radius: 6px; text-align: center; font-size: 16px; font-weight: 600;">
+    <td style="padding: 8px; text-align: right;">
+      <span class="line-item-amount" style="font-weight: 700; color: #4caf50; font-size: 15px;">$${(lineItem.amount || 0).toFixed(2)}</span>
     </td>
-    <td style="padding: 10px; text-align: right;">
-      <input type="number" class="line-item-rate" value="${lineItem.rate}" min="0" step="0.01"
-             style="width: 100px; padding: 12px; background: #1e1e1c; color: #e5e3df; border: 2px solid #b8ae97; border-radius: 6px; text-align: right; font-size: 16px; font-weight: 600;">
-    </td>
-    <td style="padding: 10px; text-align: right;">
-      <span class="line-item-amount" style="font-weight: 700; color: #4caf50; font-size: 18px;">$${lineItem.amount.toFixed(2)}</span>
-    </td>
-    <td style="padding: 10px; text-align: center;">
-      <button type="button" class="btn-delete-line" style="padding: 8px 12px; background: #f44336; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 18px; font-weight: 700;">×</button>
+    <td style="padding: 8px; text-align: center;">
+      <button type="button" class="btn-delete-line" style="padding: 6px 10px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: 700; line-height: 1;">&times;</button>
     </td>
   `;
 
-  // Set service if provided
-  if (lineItem.service_id) {
-    row.querySelector('.line-item-service').value = lineItem.service_id;
-  }
-
-  // Service selection handler
-  row.querySelector('.line-item-service').addEventListener('change', (e) => {
-    const selectedOption = e.target.options[e.target.selectedIndex];
-    const defaultRate = parseFloat(selectedOption.dataset.rate) || 0;
-    const serviceName = selectedOption.textContent;
-
-    row.querySelector('.line-item-rate').value = defaultRate.toFixed(2);
-    if (!row.querySelector('.line-item-description').value) {
-      row.querySelector('.line-item-description').value = serviceName;
-    }
-    updateLineItemAmount(row);
-  });
-
-  // Qty, SqFt, and Rate change handlers
+  // Event handlers
   row.querySelector('.line-item-qty').addEventListener('input', () => updateLineItemAmount(row));
-  row.querySelector('.line-item-sqft').addEventListener('input', () => updateLineItemAmount(row));
   row.querySelector('.line-item-rate').addEventListener('input', () => updateLineItemAmount(row));
-
-  // Delete button handler
   row.querySelector('.btn-delete-line').addEventListener('click', () => {
     row.remove();
     updateEstimateTotal();
@@ -187,9 +151,8 @@ function addLineItem(item = null) {
 // Update single line item amount
 function updateLineItemAmount(row) {
   const qty = parseFloat(row.querySelector('.line-item-qty').value) || 0;
-  const sqft = parseFloat(row.querySelector('.line-item-sqft').value) || 0;
   const rate = parseFloat(row.querySelector('.line-item-rate').value) || 0;
-  const amount = qty * sqft * rate;
+  const amount = qty * rate;
 
   row.querySelector('.line-item-amount').textContent = '$' + amount.toFixed(2);
   updateEstimateTotal();
@@ -202,104 +165,147 @@ function updateEstimateTotal() {
 
   rows.forEach(row => {
     const qty = parseFloat(row.querySelector('.line-item-qty').value) || 0;
-    const sqft = parseFloat(row.querySelector('.line-item-sqft').value) || 0;
     const rate = parseFloat(row.querySelector('.line-item-rate').value) || 0;
-    total += qty * sqft * rate;
+    total += qty * rate;
   });
 
   document.getElementById('estimate-total').textContent = '$' + total.toFixed(2);
 
-  // Update hidden fields for backwards compatibility
-  document.getElementById('quoted-price').value = total;
+  // Sync with quoted price input if line items have values
+  if (total > 0) {
+    const quotedPriceInput = document.getElementById('quoted-price-input');
+    if (quotedPriceInput) {
+      quotedPriceInput.value = total.toFixed(2);
+    }
+    document.getElementById('quoted-price').value = total;
+  }
 
   // Update profit display
-  updateProfitDisplay(total);
+  updateProfitDisplay(total > 0 ? total : null);
 
   return total;
 }
 
 // Update profit margin display
 function updateProfitDisplay(quotedPrice = null) {
-  console.log('========== updateProfitDisplay CALLED ==========');
-
   const materialCostInput = document.getElementById('material-cost-input');
-  if (!materialCostInput) {
-    console.error('❌ Material cost input not found');
-    return;
-  }
+  if (!materialCostInput) return;
 
   const materialCost = parseFloat(materialCostInput.value) || 0;
-  console.log('📊 Material Cost from input:', materialCost, '(raw value:', materialCostInput.value, ')');
-  console.log('📊 Material Cost Input element:', materialCostInput);
 
-  // Get quoted price from parameter or calculate from line items
   let quoted = quotedPrice;
   if (quoted === null || quoted === undefined) {
-    const rows = document.querySelectorAll('.estimate-item-row');
-    quoted = 0;
-    console.log('📝 Calculating quoted price from', rows.length, 'line items:');
-    rows.forEach((row, index) => {
-      const qty = parseFloat(row.querySelector('.line-item-qty')?.value) || 0;
-      const sqft = parseFloat(row.querySelector('.line-item-sqft')?.value) || 0;
-      const rate = parseFloat(row.querySelector('.line-item-rate')?.value) || 0;
-      const lineTotal = qty * sqft * rate;
-      console.log(`  Line ${index + 1}: ${qty} × ${sqft} × $${rate} = $${lineTotal.toFixed(2)}`);
-      quoted += lineTotal;
-    });
+    const quotedInput = document.getElementById('quoted-price-input');
+    quoted = quotedInput ? parseFloat(quotedInput.value) || 0 : 0;
   }
-  console.log('💵 Total Quoted Price:', quoted);
 
   const profit = quoted - materialCost;
   const profitPercentValue = materialCost > 0 ? (profit / materialCost * 100) : 0;
-  console.log('💰 Calculated Profit: $' + profit.toFixed(2), '(' + profitPercentValue.toFixed(1) + '%)');
 
-  // Update profit display elements
   const profitQuoted = document.getElementById('profit-quoted');
   const profitCost = document.getElementById('profit-cost');
   const profitValue = document.getElementById('profit-value');
   const profitPercentEl = document.getElementById('profit-percent');
 
-  console.log('🎯 Updating display elements:');
-  if (profitQuoted) {
-    profitQuoted.textContent = '$' + quoted.toFixed(2);
-    console.log('  ✓ profit-quoted: $' + quoted.toFixed(2));
-  } else {
-    console.error('  ❌ profit-quoted element not found!');
-  }
-
-  if (profitCost) {
-    profitCost.textContent = '$' + materialCost.toFixed(2);
-    console.log('  ✓ profit-cost: $' + materialCost.toFixed(2));
-  } else {
-    console.error('  ❌ profit-cost element not found!');
-  }
-
+  if (profitQuoted) profitQuoted.textContent = '$' + quoted.toFixed(2);
+  if (profitCost) profitCost.textContent = '$' + materialCost.toFixed(2);
   if (profitValue) {
     profitValue.textContent = '$' + profit.toFixed(2);
     profitValue.style.color = profit >= 0 ? '#4caf50' : '#f44336';
-    console.log('  ✓ profit-value: $' + profit.toFixed(2));
-  } else {
-    console.error('  ❌ profit-value element not found!');
   }
-
   if (profitPercentEl) {
     profitPercentEl.textContent = '(' + profitPercentValue.toFixed(1) + '%)';
     profitPercentEl.style.color = profit >= 0 ? '#81c784' : '#e57373';
-    console.log('  ✓ profit-percent:', profitPercentValue.toFixed(1) + '%');
-  } else {
-    console.error('  ❌ profit-percent element not found!');
   }
 
-  // Update hidden field
   const hiddenField = document.getElementById('material-cost');
-  if (hiddenField) {
-    hiddenField.value = materialCost;
-    console.log('  ✓ Hidden field updated');
-  }
-
-  console.log('========== updateProfitDisplay COMPLETE ==========\n');
+  if (hiddenField) hiddenField.value = materialCost;
 
   return { quoted, materialCost, profit, profitPercentValue };
+}
+
+// Import cabinet details from Mozaik data
+function importFromMozaik() {
+  if (!currentJobCabinetData) {
+    showToast('No Mozaik cabinet data available for this job', 'error');
+    return;
+  }
+
+  const data = typeof currentJobCabinetData === 'string'
+    ? JSON.parse(currentJobCabinetData)
+    : currentJobCabinetData;
+
+  // Clear existing items
+  document.getElementById('estimate-items-body').innerHTML = '';
+
+  // Detect format: detailed (counts > 1) vs simple (cabinets[] with amounts)
+  const isDetailed = data.rooms && data.rooms.some(r =>
+    r.counts && (r.counts.base > 1 || r.counts.wall > 1 || r.counts.tall > 1));
+
+  if (data.rooms && data.rooms.length > 0) {
+    if (isDetailed) {
+      // Detailed format: use counts for descriptions
+      data.rooms.forEach(room => {
+        const roomLabel = data.rooms.length > 1 ? ` (${room.name})` : '';
+
+        if (room.counts.base > 0) {
+          addLineItem({ description: `${room.counts.base} Base Cabinets${roomLabel}`, quantity: 1, rate: 0, amount: 0 });
+        }
+        if (room.counts.wall > 0) {
+          addLineItem({ description: `${room.counts.wall} Wall Cabinets${roomLabel}`, quantity: 1, rate: 0, amount: 0 });
+        }
+        if (room.counts.tall > 0) {
+          addLineItem({ description: `${room.counts.tall} Tall Cabinets${roomLabel}`, quantity: 1, rate: 0, amount: 0 });
+        }
+        if (room.doors && room.doors.base_tall > 0) {
+          addLineItem({ description: `${room.doors.base_tall} Base/Tall Doors${roomLabel}`, quantity: 1, rate: 0, amount: 0 });
+        }
+        if (room.doors && room.doors.wall > 0) {
+          addLineItem({ description: `${room.doors.wall} Wall Doors${roomLabel}`, quantity: 1, rate: 0, amount: 0 });
+        }
+        if (room.doors && room.doors.drawer_fronts > 0) {
+          addLineItem({ description: `${room.doors.drawer_fronts} Drawer Fronts${roomLabel}`, quantity: 1, rate: 0, amount: 0 });
+        }
+        if (room.crown_molding_ft > 0) {
+          addLineItem({ description: `Crown Molding - ${room.crown_molding_ft} LF${roomLabel}`, quantity: 1, rate: 0, amount: 0 });
+        }
+      });
+    } else {
+      // Simple format: use cabinets[] array with pre-filled amounts
+      data.rooms.forEach(room => {
+        const roomLabel = data.rooms.length > 1 ? ` (${room.name})` : '';
+
+        if (room.cabinets && room.cabinets.length > 0) {
+          room.cabinets.forEach(cab => {
+            const desc = cab.qty > 1
+              ? `${cab.qty} ${cab.type}${roomLabel}`
+              : `${cab.type}${roomLabel}`;
+            addLineItem({ description: desc, quantity: 1, rate: cab.amount || 0, amount: cab.amount || 0 });
+          });
+        }
+        if (room.crown_molding_ft > 0) {
+          addLineItem({ description: `Crown Molding - ${room.crown_molding_ft} LF${roomLabel}`, quantity: 1, rate: 0, amount: 0 });
+        }
+      });
+    }
+
+    // Add finish line if available
+    if (data.finish) {
+      addLineItem({ description: `Cabinet Finish: ${data.finish}`, quantity: 1, rate: 0, amount: 0 });
+    }
+  }
+
+  updateEstimateTotal();
+  showToast('Cabinet details imported from Mozaik', 'success');
+}
+
+// Set cabinet data for current job (called from app.js when loading a job)
+function setCabinetData(cabinetData) {
+  currentJobCabinetData = cabinetData;
+  const importBtn = document.getElementById('import-mozaik-btn');
+  if (importBtn) {
+    importBtn.style.display = cabinetData ? 'inline-block' : 'none';
+  }
 }
 
 // Get line items for saving
@@ -308,19 +314,17 @@ function getLineItems() {
   const items = [];
 
   rows.forEach(row => {
-    const serviceId = row.querySelector('.line-item-service').value;
     const description = row.querySelector('.line-item-description').value.trim();
     const qty = parseFloat(row.querySelector('.line-item-qty').value) || 1;
-    const sqft = parseFloat(row.querySelector('.line-item-sqft').value) || 1;
     const rate = parseFloat(row.querySelector('.line-item-rate').value) || 0;
-    const amount = qty * sqft * rate;
+    const amount = qty * rate;
 
     if (description) {
       items.push({
-        service_id: serviceId || null,
+        service_id: null,
         description: description,
         quantity: qty,
-        sqft: sqft,
+        sqft: 1,
         rate: rate,
         amount: amount
       });
@@ -366,57 +370,30 @@ document.getElementById('add-line-item-btn').addEventListener('click', () => {
   addLineItem();
 });
 
-// Material cost input handler - attach after DOM loads
+// Import from Mozaik button handler
+document.getElementById('import-mozaik-btn').addEventListener('click', () => {
+  importFromMozaik();
+});
+
+// Material cost input handler
 let materialCostListenerAttached = false;
 
 function initMaterialCostListener() {
   const materialCostInput = document.getElementById('material-cost-input');
+  if (!materialCostInput) return;
 
-  if (!materialCostInput) {
-    console.error('❌ Material cost input element not found!');
-    return;
-  }
-
-  // Only attach listener once per page load
   if (!materialCostListenerAttached) {
-    console.log('✓ Attaching material cost listener to:', materialCostInput);
-
-    // Add input event listener
-    materialCostInput.addEventListener('input', (e) => {
-      console.log('💰 Material cost INPUT event fired. Value:', e.target.value);
-      updateProfitDisplay();
-    });
-
-    // Add change event listener as backup
-    materialCostInput.addEventListener('change', (e) => {
-      console.log('💰 Material cost CHANGE event fired. Value:', e.target.value);
-      updateProfitDisplay();
-    });
-
-    // Add keyup event listener for more responsiveness
-    materialCostInput.addEventListener('keyup', (e) => {
-      console.log('💰 Material cost KEYUP event fired. Value:', e.target.value);
-      updateProfitDisplay();
-    });
-
+    materialCostInput.addEventListener('input', () => updateProfitDisplay());
+    materialCostInput.addEventListener('change', () => updateProfitDisplay());
     materialCostListenerAttached = true;
-    console.log('✅ Material cost listener attached successfully');
-  } else {
-    console.log('✓ Material cost listener already attached');
   }
 
-  // Always trigger calculation when this is called (even if listener was already attached)
-  console.log('🔄 Triggering profit calculation. Current value:', materialCostInput.value);
   updateProfitDisplay();
 }
 
 // Call on DOM load
 document.addEventListener('DOMContentLoaded', () => {
   initMaterialCostListener();
-});
-
-// Initialize on page load
-document.addEventListener('DOMContentLoaded', () => {
   loadCustomersAndServices();
 });
 
@@ -428,5 +405,7 @@ window.estimateHandler = {
   getLineItems,
   updateEstimateTotal,
   addLineItem,
-  initMaterialCostListener
+  initMaterialCostListener,
+  importFromMozaik,
+  setCabinetData
 };
